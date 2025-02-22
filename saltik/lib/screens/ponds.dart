@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PondPage extends StatelessWidget {
   const PondPage({Key? key}) : super(key: key);
@@ -32,20 +33,21 @@ class PondPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 100.0),
+            padding: const EdgeInsets.only(top: 70.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   "CURRENT STATUS OF THE PONDS",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 25,
+                  style: GoogleFonts.workSans(
+                    textStyle: TextStyle(
+                      fontSize: 25,
                     fontWeight: FontWeight.bold,
                     color: Color.fromARGB(255, 67, 67, 67),
-                  ),
+                    )),
                 ),
-                const SizedBox(height: 5),
+                //const SizedBox(height: 2),
                 const Text(
                   "Choose which aquatic species",
                   textAlign: TextAlign.center,
@@ -84,8 +86,9 @@ class PondPage extends StatelessWidget {
     required String imagePath,
   }) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 5),
-      height: 150, // Total height of the card
+      //padding: const EdgeInsets.only(top: 10),
+      margin: const EdgeInsets.symmetric(vertical: 5),
+      height: 170, // Total height of the card
       decoration: BoxDecoration(
         boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
       ),
@@ -106,8 +109,8 @@ class PondPage extends StatelessWidget {
             height: 75,
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
-                color: Colors.blue.withOpacity(0.4),
+                //borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
+                color: const Color.fromARGB(255, 96, 173, 235).withOpacity(0.6),
               ),
             ),
           ),
@@ -132,6 +135,7 @@ class PondPage extends StatelessWidget {
                     color: Colors.black87,
                     fontStyle: FontStyle.italic,
                     fontSize: 13,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -140,7 +144,7 @@ class PondPage extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
