@@ -11,7 +11,7 @@ class SplashScreen extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'lib/images/icon.jpg', // Ensure you have this image in assets folder
+            'lib/assets/icon.jpg', // Ensure you have this image in assets folder
             fit: BoxFit.cover,
           ),
           Positioned(
@@ -22,7 +22,7 @@ class SplashScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  MaterialPageRoute(builder: (context) => const MainScreen()),
                 );
               },
             ),
