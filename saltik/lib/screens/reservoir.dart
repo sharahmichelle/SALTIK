@@ -16,14 +16,33 @@ class _ReservoirPageState extends State<ReservoirPage> {
   @override
   void initState() {
     super.initState();
-    // Listen for real-time updates
-    _sensorRef.onValue.listen((DatabaseEvent event) {
-      var data = event.snapshot.value as Map<dynamic, dynamic>?; // Convert snapshot to Map
-      if (data != null) {
+    _initializeFirebaseListeners();
+  }
+
+  void _initializeFirebaseListeners() {
+    _sensorRef.child("temperature").onValue.listen((event) {
+      var tempData = event.snapshot.value;
+      if (tempData != null) {
         setState(() {
-          temperature = data["temperature"].toString();
-          ecValue = data["ec_value"].toString();
-          salinity = data["salinity"].toString();
+          temperature = tempData.toString();
+        });
+      }
+    });
+
+    _sensorRef.child("ec_value").onValue.listen((event) {
+      var ecData = event.snapshot.value;
+      if (ecData != null) {
+        setState(() {
+          ecValue = ecData.toString();
+        });
+      }
+    });
+
+    _sensorRef.child("salinity").onValue.listen((event) {
+      var salinityData = event.snapshot.value;
+      if (salinityData != null) {
+        setState(() {
+          salinity = salinityData.toString();
         });
       }
     });
@@ -37,7 +56,7 @@ class _ReservoirPageState extends State<ReservoirPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("🌡️ Temperature: $temperature °C", style: TextStyle(fontSize: 24)),
+            Text("\ud83c\udf21\ufe0f Temperature: $temperature °C", style: TextStyle(fontSize: 24)),
             SizedBox(height: 10),
             Text("⚡ EC Value: $ecValue", style: TextStyle(fontSize: 24)),
             SizedBox(height: 10),
