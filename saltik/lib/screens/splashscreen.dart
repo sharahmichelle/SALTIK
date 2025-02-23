@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
+//import 'home_page.dart';
+import 'package:saltik/authenticate/signin.dart';
+import 'package:saltik/screens/home_page.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -20,9 +22,10 @@ class SplashScreen extends StatelessWidget {
             child: IconButton(
               icon: const Icon(Icons.arrow_circle_right, size: 50, color: Colors.white),
               onPressed: () {
-                Navigator.push(
+                debugPrint("Button Pressed! Navigating to SignInPage...");
+                Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const MainScreen()),
+                  MaterialPageRoute(builder: (context) => const SignInPage()),
                 );
               },
             ),
