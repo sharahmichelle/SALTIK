@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "261059511428",
+    "firebase_url": "https://saltik-198-default-rtdb.firebaseio.com",
+    "project_id": "saltik-198",
+    "storage_bucket": "saltik-198.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:261059511428:android:e8c7acc426b58a0bb9eed1",
+        "android_client_info": {
+          "package_name": "com.example.saltik"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACbx9uRQf_gW85TYH09SRio8ra7dm2xK0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
