@@ -3,6 +3,23 @@ plugins {
     id "kotlin-android"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
+    id("com.google.gms.google-services")
+}
+
+dependencies {
+  // Import the Firebase BoM
+  implementation(platform("com.google.firebase:firebase-bom:33.9.0"))
+
+  // TODO: Add the dependencies for Firebase products you want to use
+  // When using the BoM, don't specify versions in Firebase dependencies
+  implementation("com.google.firebase:firebase-analytics")
+  implementation("com.google.firebase:firebase-auth")   // If using Firebase Authentication
+  implementation("com.google.firebase:firebase-firestore")  // If using Firestore
+  implementation("com.google.firebase:firebase-database")  // If using Firebase Realtime Databas
+
+
+  // Add the dependencies for any other desired Firebase products
+  // https://firebase.google.com/docs/android/setup#available-libraries
 }
 
 def localProperties = new Properties()
@@ -24,13 +41,18 @@ if (flutterVersionName == null) {
 }
 
 android {
+    // namespace = "com.example.saltik"
+    // compileSdk = flutter.compileSdkVersion
+    // ndkVersion = flutter.ndkVersion
     namespace = "com.example.saltik"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 34  // Set this explicitly to match your SDK version
+    ndkVersion = "25.1.8937393"  // Use a valid NDK version or remove if not needed
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        //sourceCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        //targetCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     defaultConfig {
@@ -38,8 +60,14 @@ android {
         applicationId = "com.example.saltik"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        //minSdk = flutter.minSdkVersion
+        // minSdk = minSdkVersion 21
+        // targetSdk = flutter.targetSdkVersion
+        // versionCode = flutterVersionCode.toInteger()
+        // versionName = flutterVersionName
+
+        minSdk = 23  // Set explicitly
+        targetSdk = 33
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
     }
