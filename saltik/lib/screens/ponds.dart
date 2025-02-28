@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'pond_status.dart';
 
 class PondPage extends StatelessWidget {
   const PondPage({Key? key}) : super(key: key);
@@ -10,7 +11,7 @@ class PondPage extends StatelessWidget {
       {
         "name": "MILKFISH",
         "scientificName": "Chanos chanos",
-        "ponds": "0",  // value is based on the database, modifyyy!!!!
+        "ponds": "0",  // Modify based on database
         "image": "lib/assets/milkfish.jpg"
       },
       {
@@ -41,13 +42,13 @@ class PondPage extends StatelessWidget {
                   "CURRENT STATUS OF THE PONDS",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.workSans(
-                    textStyle: TextStyle(
+                    textStyle: const TextStyle(
                       fontSize: 25,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 67, 67, 67),
-                    )),
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromARGB(255, 67, 67, 67),
+                    ),
+                  ),
                 ),
-                //const SizedBox(height: 2),
                 const Text(
                   "Choose which aquatic species",
                   textAlign: TextAlign.center,
@@ -59,13 +60,13 @@ class PondPage extends StatelessWidget {
               ],
             ),
           ),
-          // List of species
           Expanded(
             child: ListView.builder(
               itemCount: species.length,
               itemBuilder: (context, index) {
                 final item = species[index];
                 return _buildSpeciesCard(
+                  context,
                   name: item["name"]!,
                   scientificName: item["scientificName"]!,
                   ponds: item["ponds"]!,
@@ -79,39 +80,52 @@ class PondPage extends StatelessWidget {
     );
   }
 
-    Widget _buildSpeciesCard({
-    required String name,
-    required String scientificName,
-    required String ponds,
-    required String imagePath,
-  }) {
-    return Container(
-      //padding: const EdgeInsets.only(top: 10),
+Widget _buildSpeciesCard(
+  BuildContext context, {
+  required String name,
+  required String scientificName,
+  required String ponds,
+  required String imagePath,
+}) {
+  return GestureDetector(
+    onTap: () {
+      // Navigate to PondDetailPage with species-specific details
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PondDetailPage(
+            speciesName: name, // Pass species name
+            scientificName: scientificName, // Pass scientific name
+          ),
+        ),
+      );
+    },
+    child: Container(
       margin: const EdgeInsets.symmetric(vertical: 5),
-      height: 170, // Total height of the card
+      height: 170,
       decoration: BoxDecoration(
         boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
       ),
       child: Stack(
         children: [
           ClipRRect(
-            child: Image.asset(
-              imagePath,
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
+            child: Opacity(
+              opacity: 0.6,
+              child: Image.asset(
+                imagePath,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           Positioned(
-            bottom: 0, // Keep it at the bottom
+            bottom: 0,
             left: 0,
             right: 0,
             height: 75,
             child: Container(
-              decoration: BoxDecoration(
-                //borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
-                color: const Color.fromARGB(255, 96, 173, 235).withOpacity(0.6),
-              ),
+              color: const Color.fromARGB(255, 96, 173, 235).withOpacity(0.6),
             ),
           ),
           Padding(
@@ -152,6 +166,7 @@ class PondPage extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
