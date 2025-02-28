@@ -15,7 +15,7 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    ReservoirPage(),
+    HomePage(),
     const PondPage(),
     const HistoryPage(),
     const ProfilePage(),
@@ -42,18 +42,18 @@ class _MainScreenState extends State<MainScreen> {
         onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.propane_tank),
-            activeIcon: Icon(Icons.propane_tank_outlined),
-            label: 'Reservoir',
+            icon: Icon(Icons.house_outlined),
+            activeIcon: Icon(Icons.house),
+            label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.circle_rounded),
-            activeIcon: Icon(Icons.circle_outlined),
+            icon: Icon(Icons.circle_outlined),
+            activeIcon: Icon(Icons.circle_rounded),
             label: 'Pond',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.timelapse),
-            activeIcon: Icon(Icons.timelapse_outlined),
+            icon: Icon(Icons.timelapse_sharp),
+            activeIcon: Icon(Icons.timelapse_rounded),
             label: 'History',
           ),
           BottomNavigationBarItem(

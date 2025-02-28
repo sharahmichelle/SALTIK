@@ -19,29 +19,20 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   File? _image; // Store selected/taken image
   final ImagePicker _picker = ImagePicker();
+  String _selectedRole = "Laborer"; // Default role is "Laborer"
 
   // Function to pick an image from the gallery
   Future<void> _pickImageFromGallery() async {
-    await requestPermissions(); // Ensure permissions are granted
-
+    await requestPermissions();
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-    }
+    if (pickedFile != null) setState(() => _image = File(pickedFile.path));
   }
 
   // Function to take a photo using the camera
   Future<void> _takePhoto() async {
-    await requestPermissions(); // Ensure permissions are granted
-
+    await requestPermissions();
     final pickedFile = await _picker.pickImage(source: ImageSource.camera);
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-    }
+    if (pickedFile != null) setState(() => _image = File(pickedFile.path));
   }
 
   @override
@@ -58,9 +49,7 @@ class _SignUpPageState extends State<SignUpPage> {
         elevation: 1,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(
@@ -71,10 +60,7 @@ class _SignUpPageState extends State<SignUpPage> {
             children: [
               // Profile Image Preview
               _image != null
-                  ? CircleAvatar(
-                      radius: 50,
-                      backgroundImage: FileImage(_image!),
-                    )
+                  ? CircleAvatar(radius: 50, backgroundImage: FileImage(_image!))
                   : const Icon(Icons.account_circle, size: 80, color: Colors.grey),
 
               const SizedBox(height: 10),
@@ -86,26 +72,19 @@ class _SignUpPageState extends State<SignUpPage> {
                 children: [
                   Column(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.photo, size: 40),
-                        onPressed: _pickImageFromGallery, // Pick from gallery
-                      ),
+                      IconButton(icon: const Icon(Icons.photo, size: 40), onPressed: _pickImageFromGallery),
                       const Text("Open Gallery"),
                     ],
                   ),
                   const SizedBox(width: 20),
                   Column(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.camera_alt, size: 40),
-                        onPressed: _takePhoto, // Take photo using camera
-                      ),
+                      IconButton(icon: const Icon(Icons.camera_alt, size: 40), onPressed: _takePhoto),
                       const Text("Take Photo"),
                     ],
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
 
               // First Name
@@ -151,34 +130,34 @@ class _SignUpPageState extends State<SignUpPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                    ElevatedButton(
-                    onPressed: () {}, 
+                  ElevatedButton(
+                    onPressed: () => setState(() => _selectedRole = "Laborer"),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 222, 221, 221), // Change background color
-                        foregroundColor: Colors.black, // Change text color
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), // Rounded corners
+                      backgroundColor: _selectedRole == "Laborer" ? Colors.blue : Colors.grey[300], // Highlight selected role
+                      foregroundColor: _selectedRole == "Laborer" ? Colors.white : Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     child: const Text("Laborer"),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                    onPressed: () {}, 
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () => setState(() => _selectedRole = "Researcher"),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 222, 221, 221) , // Change background color
-                        foregroundColor: Colors.black, // Change text color
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), // Rounded corners
+                      backgroundColor: _selectedRole == "Researcher" ? Colors.blue : Colors.grey[300],
+                      foregroundColor: _selectedRole == "Researcher" ? Colors.white : Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     child: const Text("Researcher"),
-                    ),
+                  ),
                 ],
-                ),
+              ),
               const SizedBox(height: 20),
 
               // Create Account Button
               SizedBox(
-                width: 180, 
+                width: 180,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => print("Selected Role: $_selectedRole"), // For testing
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

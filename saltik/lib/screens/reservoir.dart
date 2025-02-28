@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 
-class ReservoirPage extends StatefulWidget {
+class HomePage extends StatefulWidget {
   @override
-  _ReservoirPageState createState() => _ReservoirPageState();
+  _HomePageState createState() => _HomePageState();
 }
 
-class _ReservoirPageState extends State<ReservoirPage> {
+class _HomePageState extends State<HomePage> {
   final DatabaseReference _sensorRef = FirebaseDatabase.instance.ref("sensor");
 
   String temperature = "Loading...";
