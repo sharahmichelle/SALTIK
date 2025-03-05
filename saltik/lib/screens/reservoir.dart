@@ -10,7 +10,6 @@ class _HomePageState extends State<HomePage> {
   final DatabaseReference _sensorRef = FirebaseDatabase.instance.ref("sensor");
 
   String temperature = "Loading...";
-  String ecValue = "Loading...";
   String salinity = "Loading...";
 
   @override
@@ -29,15 +28,6 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    _sensorRef.child("ec_value").onValue.listen((event) {
-      var ecData = event.snapshot.value;
-      if (ecData != null) {
-        setState(() {
-          ecValue = ecData.toString();
-        });
-      }
-    });
-
     _sensorRef.child("salinity").onValue.listen((event) {
       var salinityData = event.snapshot.value;
       if (salinityData != null) {
@@ -51,17 +41,95 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Reservoir Sensor Data")),
-      body: Center(
+      backgroundColor: Colors.grey[200],
+      body: SafeArea(
+      child: SingleChildScrollView(
+        child: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("\ud83c\udf21\ufe0f Temperature: $temperature °C", style: TextStyle(fontSize: 24)),
-            SizedBox(height: 10),
-            Text("⚡ EC Value: $ecValue", style: TextStyle(fontSize: 24)),
-            SizedBox(height: 10),
-            Text("🌊 Salinity: $salinity", style: TextStyle(fontSize: 24)),
-          ],
+          Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+                Padding(
+                  padding: EdgeInsets.only(top: 0), 
+                  child: Image.asset(
+                  'lib/assets/saltik-logo-v1.png', 
+                  height: 300, 
+                  fit: BoxFit.contain,
+                ),
+                ),
+                Transform.translate(
+                offset: Offset(0, -70),
+                child: Column(
+                  children: [
+                    _buildCircularIndicator("$salinity ppt", Colors.blue),
+                    SizedBox(height: 10),
+                    Text(
+                      "TILAPIA (NILE)",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      "Average Salinity of Ponds",
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    ),
+                    Text(
+                      "0 ponds require immediate attention",
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ),
+                SizedBox(height: 0),
+                Transform.translate(
+                offset: Offset(0, -50),
+                child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
+                child: Text("View Details"),
+                ),
+              ),
+              Transform.translate(
+                offset: Offset(0, -10),
+                child: Column(
+                  children: [
+                    _buildCircularIndicator("$temperature °C", Colors.grey),
+              SizedBox(height: 10),
+              Text(
+                "Average Temperature",
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                      ),
+                    ],
+                  ),
+                ), 
+              ],
+          ),
+            ],
+          ),
+      ),
+      ),
+    ), 
+    );
+  }
+
+  Widget _buildCircularIndicator(String value, Color color) {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color.withOpacity(0.8), color.withOpacity(0.3)],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          value,
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ),
     );
