@@ -1,0 +1,140 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class AddEditPondPage extends StatefulWidget {
+  final String speciesName;
+  final String? pondId;
+  final Map<String, dynamic>? pondData;
+
+  const AddEditPondPage({
+    Key? key,
+    required this.speciesName,
+    this.pondId,
+    this.pondData,
+  }) : super(key: key);
+
+  @override
+  _AddEditPondPageState createState() => _AddEditPondPageState();
+}
+
+class _AddEditPondPageState extends State<AddEditPondPage> {
+  String? selectedLifeStage;
+  String? selectedStatus;
+
+  final List<Map<String, String>> lifeStages = [
+    {"name": "Egg", "duration": "12-15 hours"},
+    {"name": "Nauplius", "duration": "1-3 days"},
+    {"name": "Zoeae", "duration": "3-4 days"},
+    {"name": "Mysis", "duration": "5-7 days"},
+    {"name": "Post-larvae", "duration": "8-15 days"},
+    {"name": "Juvenile", "duration": "16-90 days"},
+    {"name": "Adult", "duration": "2+ months"},
+  ];
+
+  final List<String> occupancyStatuses = ["Occupied", "Empty"];
+
+  @override
+  void initState() {
+    super.initState();
+    selectedLifeStage = widget.pondData?['lifeStage'] ?? "Juvenile";
+    selectedStatus = widget.pondData?['status'] ?? "Occupied";
+  }
+
+  Future<void> savePond() async {
+    final data = {
+      "lifeStage": selectedLifeStage,
+      "status": selectedStatus,
+    };
+
+    try {
+      if (widget.pondId == null) {
+        // Add new pond
+        await FirebaseFirestore.instance
+            .collection('species')
+            .doc(widget.speciesName.toLowerCase())
+            .collection('ponds')
+            .add(data);
+      } else {
+        // Update existing pond
+        await FirebaseFirestore.instance
+            .collection('species')
+            .doc(widget.speciesName.toLowerCase())
+            .collection('ponds')
+            .doc(widget.pondId)
+            .update(data);
+      }
+      Navigator.pop(context);
+    } catch (e) {
+      print("Error saving pond: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.speciesName.toUpperCase(),
+          style: GoogleFonts.workSans(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Select the correct information for your pond"),
+            const SizedBox(height: 20),
+            const Text("Life Stage"),
+            Column(
+              children: lifeStages.map((stage) {
+                return RadioListTile<String>(
+                  title: Text("${stage['name']} (${stage['duration']})"),
+                  value: stage['name'],
+                  groupValue: selectedLifeStage,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedLifeStage = value;
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            const Text("Occupancy Status"),
+            Column(
+              children: occupancyStatuses.map((status) {
+                return RadioListTile<String>(
+                  title: Text(status),
+                  value: status,
+                  groupValue: selectedStatus,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedStatus = value;
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const Spacer(),
+            Center(
+              child: ElevatedButton(
+                onPressed: savePond,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                child: const Text("Done", style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
