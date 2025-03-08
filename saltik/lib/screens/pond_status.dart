@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'edit_pond.dart';
 
 class PondDetailPage extends StatelessWidget {
   final String speciesName;
@@ -75,7 +75,7 @@ class PondDetailPage extends StatelessWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: 20,
                     mainAxisSpacing: 20,
-                    childAspectRatio: 0.8,
+                    childAspectRatio: 0.7,
                   ),
                   itemCount: ponds.length,
                   itemBuilder: (context, index) {
@@ -113,10 +113,13 @@ class PondDetailPage extends StatelessWidget {
                           ),
                         ),
                         Text("Status: ${pond["status"]}", style: const TextStyle(fontSize: 12)),
-                        if (!isEmpty) ...[
-                          Text("Salinity: ${salinity?.toInt() ?? 0} ppt", style: const TextStyle(fontSize: 12)),
-                          Text("Life Stage: ${pond["lifestage"] ?? 'Unknown'}", style: const TextStyle(fontSize: 12)),
-                        ],
+                        Text("Salinity: ${salinity?.toInt() ?? 0} ppt", style: const TextStyle(fontSize: 12)),
+                        Text("Life Stage: ${pond["lifestage"] ?? 'Unknown'}", style: const TextStyle(fontSize: 12)),
+
+                        // if (!isEmpty) ...[
+                        //   Text("Salinity: ${salinity?.toInt() ?? 0} ppt", style: const TextStyle(fontSize: 12)),
+                        //   Text("Life Stage: ${pond["lifestage"] ?? 'Unknown'}", style: const TextStyle(fontSize: 12)),
+                        // ],
                         const Spacer(),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -149,8 +152,7 @@ class PondDetailPage extends StatelessWidget {
               },
             ),
           ),
-
-          /// ✅ **Updated "Add Pond" Button to Navigate to AddEditPondPage**
+          
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -169,7 +171,7 @@ class PondDetailPage extends StatelessWidget {
                   backgroundColor: Colors.grey,
                   minimumSize: const Size(double.infinity, 50),
                 ),
-                child: const Text("Add Pond", style: TextStyle(color: Colors.white)),
+                child: const Text("Add Pond", style: TextStyle(color: Colors.black)),
               ),
             ),
           ),
