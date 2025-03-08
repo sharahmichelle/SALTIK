@@ -24,8 +24,8 @@ class SplashScreen extends StatelessWidget {
                 debugPrint("Button Pressed! Navigating to SignInPage...");
                 Navigator.pushReplacement(
                   context,
-                  //MaterialPageRoute(builder: (context) => const SignInPage()),
-                  MaterialPageRoute(builder: (context) => const MainScreen()),
+                  MaterialPageRoute(builder: (context) => const SignInPage()),
+                  //MaterialPageRoute(builder: (context) => const MainScreen()),
                 );
               },
             ),

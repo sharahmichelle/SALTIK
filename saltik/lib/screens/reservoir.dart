@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:saltik/screens/home_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -43,76 +44,74 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.grey[200],
       body: SafeArea(
-      child: SingleChildScrollView(
-        child: Center(
-        child: Column(
-          children: [
-          Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-                Padding(
-                  padding: EdgeInsets.only(top: 0), 
-                  child: Image.asset(
-                  'lib/assets/saltik-logo-v1.png', 
-                  height: 300, 
-                  fit: BoxFit.contain,
-                ),
-                ),
-                Transform.translate(
-                offset: Offset(0, -70),
-                child: Column(
+        child: SingleChildScrollView(
+          child: Center(
+            child: Column(
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildCircularIndicator("$salinity ppt", Colors.blue),
-                    SizedBox(height: 10),
-                    Text(
-                      "TILAPIA (NILE)",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Padding(
+                      padding: EdgeInsets.only(top: 0),
+                      child: Image.asset(
+                        'lib/assets/saltik-logo-v1.png',
+                        height: 300,
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                    Text(
-                      "Average Salinity of Ponds",
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    Transform.translate(
+                      offset: Offset(0, -70),
+                      child: Column(
+                        children: [
+                          _buildCircularIndicator("$salinity ppt", Colors.blue),
+                          SizedBox(height: 15),
+                          Text(
+                            "Average Salinity of Ponds",
+                            style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                          ),
+                        ],
+                      ),
                     ),
-                    Text(
-                      "0 ponds require immediate attention",
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    SizedBox(height: 0),
+                    Transform.translate(
+                      offset: Offset(0, -50),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          MainScreenState? mainScreenState =
+                              context.findAncestorStateOfType<MainScreenState>();
+                          if (mainScreenState != null) {
+                            mainScreenState.setState(() {
+                              mainScreenState.selectedIndex = 1; // Navigate to PondPage
+                            });
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue, 
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text("View Details"),
+                      ),
+                    ),
+                    Transform.translate(
+                      offset: Offset(0, -25),
+                      child: Column(
+                        children: [
+                          _buildCircularIndicator("$temperature °C", Colors.grey),
+                          SizedBox(height: 10),
+                          Text(
+                            "Average Temperature",
+                            style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-                SizedBox(height: 0),
-                Transform.translate(
-                offset: Offset(0, -50),
-                child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                ),
-                child: Text("View Details"),
-                ),
-              ),
-              Transform.translate(
-                offset: Offset(0, -10),
-                child: Column(
-                  children: [
-                    _buildCircularIndicator("$temperature °C", Colors.grey),
-              SizedBox(height: 10),
-              Text(
-                "Average Temperature",
-                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                      ),
-                    ],
-                  ),
-                ), 
               ],
+            ),
           ),
-            ],
-          ),
+        ),
       ),
-      ),
-    ), 
     );
   }
 
