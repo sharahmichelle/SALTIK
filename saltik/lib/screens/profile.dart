@@ -105,7 +105,16 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[200],
-      body: Center(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background Image
+          Image.asset(
+            'lib/assets/profile-page.png', // Change this to your image path
+            fit: BoxFit.fill,
+          ),
+      
+      Center(
         child: _isLoading
             ? const CircularProgressIndicator()
             : _userData == null
@@ -113,14 +122,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: Image.asset(
-                          'lib/assets/saltik-logo-v2.png',
-                          height: 50,
-                        ),
-                      ),
 
                       // Profile picture
                       // Padding(
@@ -135,7 +136,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
                       // Name
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 5),
+                        padding: const EdgeInsets.only(bottom: 15
+                        ),
                         child: Text(
                           "${_userData!['firstName']} ${_userData!['lastName']}",
                           style: const TextStyle(
@@ -243,6 +245,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ],
                   ),
+      ),
+        ],
       ),
     );
   }
