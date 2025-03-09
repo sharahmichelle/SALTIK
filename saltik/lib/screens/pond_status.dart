@@ -21,6 +21,7 @@ class PondDetailPage extends StatelessWidget {
         .snapshots();
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,13 +87,31 @@ class PondDetailPage extends StatelessWidget {
                         ? pond["salinity"].toDouble()
                         : double.tryParse(pond["salinity"].toString());
 
+                    final Map<String, Map<String, double>> speciesSalinityRanges = {
+                      "tilapia": {"low": 5, "high": 20},
+                      "shrimp": {"low": 5, "high": 25},
+                      "milkfish": {"low": 15, "high": 25},
+                    };
+
+                    double lowThreshold = speciesSalinityRanges[speciesName.toLowerCase()]?["low"] ?? 10;
+                    double highThreshold = speciesSalinityRanges[speciesName.toLowerCase()]?["high"] ?? 30;
+
+                    Color salinityColor;
+                    if (salinity == null) {
+                      salinityColor = Colors.grey;
+                    } else if (salinity < lowThreshold) {
+                      salinityColor = Colors.yellow; 
+                    } else if (salinity > highThreshold) {
+                      salinityColor = Colors.red;   
+                    } else {
+                      salinityColor = Colors.blue;
+                    }
+                    
                     return Column(
                       children: [
                         CircleAvatar(
                           radius: 40,
-                          backgroundColor: isEmpty || salinity == null
-                              ? Colors.grey
-                              : (salinity < 30 ? Colors.blue : Colors.red),
+                          backgroundColor: salinityColor,
                           child: isEmpty
                               ? null
                               : Text(

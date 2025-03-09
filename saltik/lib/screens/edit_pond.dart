@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AddEditPondPage extends StatefulWidget {
@@ -21,28 +22,50 @@ class AddEditPondPage extends StatefulWidget {
 class _AddEditPondPageState extends State<AddEditPondPage> {
   String? selectedLifeStage;
   String? selectedStatus;
+  String? salinity; // Holds the real-time salinity value
 
   final List<String> lifeStages = ["Egg", "Juvenile", "Adult"];
   final List<String> occupancyStatuses = ["Occupied", "Empty"];
 
+  final DatabaseReference _sensorRef = FirebaseDatabase.instance.ref("sensor");
+
   @override
   void initState() {
     super.initState();
+
     if (widget.pondId == null) {
       selectedLifeStage = lifeStages.first;
       selectedStatus = occupancyStatuses.first;
+      _fetchRealtimeSalinity(); // Fetch salinity only when adding a new pond
     } else {
       setState(() {
         selectedLifeStage = widget.pondData?["lifestage"] ?? lifeStages.first;
         selectedStatus = widget.pondData?["status"] ?? occupancyStatuses.first;
+        salinity = widget.pondData?["salinity"]?.toString() ?? "N/A"; // Keep existing salinity when editing
       });
     }
   }
 
+  /// Fetch real-time salinity from Firebase Realtime Database
+  void _fetchRealtimeSalinity() {
+  _sensorRef.child("salinity").once().then((event) {
+    var salinityData = event.snapshot.value;
+    if (salinityData != null && mounted) { // Check if the widget is still active
+      setState(() {
+        salinity = salinityData.toString();
+      });
+    }
+  }).catchError((error) {
+    if (mounted) {
+      print("Error fetching salinity: $error");
+    }
+  });
+}
+
   Future<void> savePond() async {
-    if (selectedLifeStage == null || selectedStatus == null) {
+    if (selectedLifeStage == null || selectedStatus == null || salinity == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select both Life Stage and Occupancy Status")),
+        const SnackBar(content: Text("Please select all fields and ensure salinity is available")),
       );
       return;
     }
@@ -50,22 +73,19 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
     final data = {
       "lifestage": selectedLifeStage,
       "status": selectedStatus,
+      "salinity": double.tryParse(salinity ?? "0") ?? 0.0, // Convert salinity to double
     };
 
     try {
+      final pondCollection = FirebaseFirestore.instance
+          .collection('species')
+          .doc(widget.speciesName.toLowerCase())
+          .collection('ponds');
+
       if (widget.pondId == null) {
-        await FirebaseFirestore.instance
-            .collection('species')
-            .doc(widget.speciesName.toLowerCase())
-            .collection('ponds')
-            .add(data);
+        await pondCollection.add(data);
       } else {
-        await FirebaseFirestore.instance
-            .collection('species')
-            .doc(widget.speciesName.toLowerCase())
-            .collection('ponds')
-            .doc(widget.pondId)
-            .update(data);
+        await pondCollection.doc(widget.pondId).update(data);
       }
 
       Navigator.pop(context, true);
@@ -106,16 +126,26 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
                 ),
               ),
               const SizedBox(height: 20),
+              
+              // Salinity Display
+              Text(
+                "Salinity (ppt): ${salinity ?? 'Loading...'}",
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              const SizedBox(height: 10),
+
               buildSelectionGroup("Life Stage", lifeStages, selectedLifeStage, (value) {
                 setState(() {
                   selectedLifeStage = value;
                 });
               }),
+
               buildSelectionGroup("Occupancy Status", occupancyStatuses, selectedStatus, (value) {
                 setState(() {
                   selectedStatus = value;
                 });
               }),
+
               const SizedBox(height: 20),
               Center(
                 child: ElevatedButton(
