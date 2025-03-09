@@ -81,6 +81,7 @@ flutter:
     - lib/assets/saltik-logo-v2.png
     - lib/assets/icon-camera.png
     - lib/assets/splash-screen.png
+    - lib/assets/profile-page.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
