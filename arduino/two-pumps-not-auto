@@ -1,0 +1,63 @@
+// Motor 1 pins (Pump 1)
+const int Motor1_PWM_L = 18;
+const int Motor1_PWM_R = 19;
+const int Motor1_EN_L = 25;
+const int Motor1_EN_R = 26;
+
+// Motor 2 pins (Pump 2)
+const int Motor2_PWM_L = 22;
+const int Motor2_PWM_R = 23;
+const int Motor2_EN_L = 27;
+const int Motor2_EN_R = 32;
+
+void setup() {
+  // Initialize Serial Monitor
+  Serial.begin(115200);
+  
+  // Motor 1 pins as output
+  pinMode(Motor1_PWM_L, OUTPUT);
+  pinMode(Motor1_PWM_R, OUTPUT);
+  pinMode(Motor1_EN_L, OUTPUT);
+  pinMode(Motor1_EN_R, OUTPUT);
+
+  // Motor 2 pins as output
+  pinMode(Motor2_PWM_L, OUTPUT);
+  pinMode(Motor2_PWM_R, OUTPUT);
+  pinMode(Motor2_EN_L, OUTPUT);
+  pinMode(Motor2_EN_R, OUTPUT);
+  
+  // Enable both motor drivers (set to HIGH)
+  digitalWrite(Motor1_EN_L, HIGH);
+  digitalWrite(Motor1_EN_R, HIGH);
+  
+  digitalWrite(Motor2_EN_L, HIGH);
+  digitalWrite(Motor2_EN_R, HIGH);
+}
+
+void loop() {
+  // Motor 1 (Pump 1) - run forward for 3 seconds
+  Serial.println("Running Pump 1...");
+  analogWrite(Motor1_PWM_L, 255);  // Full speed
+  analogWrite(Motor1_PWM_R, 0);
+  delay(3000); // Run for 3 seconds
+  
+  // Stop Motor 1
+  Serial.println("Stopping Pump 1...");
+  analogWrite(Motor1_PWM_L, 0);
+  analogWrite(Motor1_PWM_R, 0);
+  delay(1000); // Pause for 1 second
+
+  // Motor 2 (Pump 2) - run forward for 3 seconds
+  Serial.println("Running Pump 2...");
+  analogWrite(Motor2_PWM_L, 255);  // Full speed
+  analogWrite(Motor2_PWM_R, 0);
+  delay(3000); // Run for 3 seconds
+  
+  // Stop Motor 2
+  Serial.println("Stopping Pump 2...");
+  analogWrite(Motor2_PWM_L, 0);
+  analogWrite(Motor2_PWM_R, 0);
+  delay(1000); // Pause for 1 second
+  
+  // Cycle repeats
+}
