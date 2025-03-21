@@ -1,0 +1,144 @@
+// Include necessary libraries
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <DFRobot_EC.h>
+#include <EEPROM.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// Define OLED display size
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1  // No reset pin used
+
+// Create an instance for the display
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// Define sensor pins
+#define EC_PIN A0 // EC sensor analog input pin
+#define TEMP_PIN 4 // Temperature sensor digital pin
+#define FRESHWATER_PUMP_PIN 16 // GPIO pin for fresh water pump (left)
+#define SALTWATER_PUMP_PIN 17 // GPIO pin for salt water pump (right)
+
+// OneWire setup for DS18B20 temperature sensor
+OneWire oneWire(TEMP_PIN);
+DallasTemperature sensors(&oneWire);
+
+// DFRobot EC sensor setup
+DFRobot_EC ecSensor;
+
+// Optimal salinity range (adjust according to your species)
+const float SALINITY_LOW = 10.0;  // Min salinity (PSU)
+const float SALINITY_HIGH = 35.0; // Max salinity (PSU)
+
+// Variables
+float currentSalinity = 0;
+float currentTemperature = 0;
+unsigned long samplingTime = millis();
+
+void setup() {
+  // Initialize serial communication for debugging
+  Serial.begin(115200);
+
+  // Initialize pumps as OUTPUT
+  pinMode(FRESHWATER_PUMP_PIN, OUTPUT);
+  pinMode(SALTWATER_PUMP_PIN, OUTPUT);
+  
+  // Turn pumps OFF initially
+  digitalWrite(FRESHWATER_PUMP_PIN, LOW);
+  digitalWrite(SALTWATER_PUMP_PIN, LOW);
+  
+  // Initialize temperature sensor
+  sensors.begin();
+  
+  // Initialize EC sensor
+  ecSensor.begin();
+
+  // Initialize OLED display
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for most OLED displays
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+  
+  // Clear the buffer
+  display.clearDisplay();
+  display.display();
+
+  // Display a startup message
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println("SALTIK System Starting...");
+  display.display();
+  delay(2000);  // Display the message for 2 seconds
+  display.clearDisplay();
+}
+
+void loop() {
+  // Read temperature
+  sensors.requestTemperatures(); 
+  currentTemperature = sensors.getTempCByIndex(0); // Get temperature in Celsius
+
+  // Only sample every 1 second
+  if (millis() - samplingTime > 1000) {
+    samplingTime = millis();
+
+    // Read EC sensor and calculate salinity
+    currentSalinity = ecSensor.readEC(analogRead(EC_PIN), currentTemperature); // Get salinity (PSU)
+    
+    Serial.print("Temperature: ");
+    Serial.print(currentTemperature);
+    Serial.println(" *C");
+    
+    Serial.print("Salinity: ");
+    Serial.print(currentSalinity);
+    Serial.println(" PSU");
+
+    // Display the values on the OLED
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+
+    display.setCursor(0, 0);
+    display.print("Temp: ");
+    display.print(currentTemperature);
+    display.println(" *C");
+
+    display.setCursor(0, 16);
+    display.print("Salinity: ");
+    display.print(currentSalinity);
+    display.println(" PSU");
+
+    // Check if salinity is too high or too low
+    if (currentSalinity > SALINITY_HIGH) {
+      // Pump fresh water (left tub) to decrease salinity
+      Serial.println("Salinity too high. Pumping fresh water...");
+      digitalWrite(FRESHWATER_PUMP_PIN, HIGH);
+      digitalWrite(SALTWATER_PUMP_PIN, LOW);
+      
+      display.setCursor(0, 32);
+      display.println("Pumping Freshwater...");
+    } else if (currentSalinity < SALINITY_LOW) {
+      // Pump salt water (right tub) to increase salinity
+      Serial.println("Salinity too low. Pumping salt water...");
+      digitalWrite(FRESHWATER_PUMP_PIN, LOW);
+      digitalWrite(SALTWATER_PUMP_PIN, HIGH);
+
+      display.setCursor(0, 32);
+      display.println("Pumping Saltwater...");
+    } else {
+      // Salinity is within the optimal range, turn off both pumps
+      Serial.println("Salinity within optimal range.");
+      digitalWrite(FRESHWATER_PUMP_PIN, LOW);
+      digitalWrite(SALTWATER_PUMP_PIN, LOW);
+
+      display.setCursor(0, 32);
+      display.println("Optimal Range.");
+    }
+
+    display.display();  // Update the OLED with the new values
+  }
+
+  delay(1000); // Wait for 1 second before the next reading
+}
