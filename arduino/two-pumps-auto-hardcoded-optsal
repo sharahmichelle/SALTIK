@@ -1,0 +1,117 @@
+#include <Wire.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <DFRobot_ESP_EC.h>
+
+// Motor Pins (Pump Control)
+const int Motor1_PWM_L = 18;  // Freshwater Pump
+const int Motor1_PWM_R = 19;
+const int Motor1_EN_L = 25;
+const int Motor1_EN_R = 26;
+
+const int Motor2_PWM_L = 22;  // Saltwater Pump
+const int Motor2_PWM_R = 23;
+const int Motor2_EN_L = 27;
+const int Motor2_EN_R = 32;
+
+// Sensor Pins
+#define ONE_WIRE_BUS 4       // DS18B20
+#define EC_SENSOR_PIN 35     // EC sensor analog pin
+
+// Salinity Thresholds (mS/cm)
+const float SALINITY_MIN = 5.0;
+const float SALINITY_MAX = 10.0;
+
+// Temperature compensation
+#define ALPHA 0.022
+#define K 0.8
+
+// Sensor Objects
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+DFRobot_ESP_EC ec;
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize motors
+  pinMode(Motor1_PWM_L, OUTPUT);
+  pinMode(Motor1_PWM_R, OUTPUT);
+  pinMode(Motor1_EN_L, OUTPUT);
+  pinMode(Motor1_EN_R, OUTPUT);
+  
+  pinMode(Motor2_PWM_L, OUTPUT);
+  pinMode(Motor2_PWM_R, OUTPUT);
+  pinMode(Motor2_EN_L, OUTPUT);
+  pinMode(Motor2_EN_R, OUTPUT);
+
+  // Initialize sensors
+  sensors.begin();
+  ec.begin();
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db);
+}
+
+void loop() {
+  // Read sensors
+  sensors.requestTemperatures();
+  float temperatureC = sensors.getTempCByIndex(0);
+  float voltage = analogRead(EC_SENSOR_PIN);
+  
+  // Get calibrated EC value (at 25°C)
+  float ecValue25 = ec.readEC(voltage, temperatureC);
+  
+  // Temperature compensation
+  float ecValue = ecValue25 * (1 + ALPHA * (temperatureC - 25));
+  float salinity = ecValue / K;
+
+  // Display salinity in Serial Monitor
+  Serial.print(F("Salinity: "));
+  Serial.print(salinity, 2);
+  Serial.println(F(" ppt"));
+
+  // Control pumps based on EC
+  if (salinity > SALINITY_MAX) {
+    activatePump(1);  // Freshwater
+    deactivatePump(2);
+    Serial.println(F("Freshwater pump is active (lowering salinity)."));
+  } 
+  else if (salinity < SALINITY_MIN) {
+    activatePump(2);  // Saltwater
+    deactivatePump(1);
+    Serial.println(F("Saltwater pump is active (increasing salinity)."));
+  }
+  else {
+    deactivatePump(1);
+    deactivatePump(2);
+    Serial.println(F("Salinity is optimal. No pump is active."));
+  }
+
+  delay(2000);
+}
+
+void activatePump(int pumpNumber) {
+  if(pumpNumber == 1) {
+    digitalWrite(Motor1_EN_L, HIGH);
+    digitalWrite(Motor1_EN_R, HIGH);
+    analogWrite(Motor1_PWM_L, 200);
+    analogWrite(Motor1_PWM_R, 0);
+  } 
+  else {
+    digitalWrite(Motor2_EN_L, HIGH);
+    digitalWrite(Motor2_EN_R, HIGH);
+    analogWrite(Motor2_PWM_L, 200);
+    analogWrite(Motor2_PWM_R, 0);
+  }
+}
+
+void deactivatePump(int pumpNumber) {
+  if(pumpNumber == 1) {
+    digitalWrite(Motor1_EN_L, LOW);
+    digitalWrite(Motor1_EN_R, LOW);
+  } 
+  else {
+    digitalWrite(Motor2_EN_L, LOW);
+    digitalWrite(Motor2_EN_R, LOW);
+  }
+}
