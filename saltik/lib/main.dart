@@ -69,6 +69,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:intl/intl.dart';
 import 'screens/splashscreen.dart';
+import 'screens/sensor_logger.dart';
 
 void initializeNotifications() {
   AwesomeNotifications().initialize(
@@ -106,62 +107,43 @@ Future<void> showNotification(String title, String body) async {
   );
 }
 
-/// Periodically logs salinity and temperature every hour
-void startSensorLogging() {
-  Timer.periodic(const Duration(minutes: 1), (Timer timer) async {  // Changed to 1 minute for testing
-    try {
-      DatabaseReference sensorRef = FirebaseDatabase.instance.ref("sensor");
+/// Start Sensor Logging on App Startup
+Future<void> startSensorLoggerOnStartup() async {
+  List<String> speciesList = ['milkfish', 'shrimp (pacific white)', 'tilapia (nile)'];
 
-      var salinitySnapshot = await sensorRef.child("salinity").get();
-      var temperatureSnapshot = await sensorRef.child("temperature").get();
+  String? latestPondId;
+  String? latestSpecies;
+  Timestamp? latestTimestamp;
 
-      if (salinitySnapshot.exists && temperatureSnapshot.exists) {
-        double salinity = double.tryParse(salinitySnapshot.value.toString()) ?? 0.0;
-        double temperature = double.tryParse(temperatureSnapshot.value.toString()) ?? 0.0;
+  // Fetch the latest pond from all species
+  for (String species in speciesList) {
+    QuerySnapshot pondsSnapshot = await FirebaseFirestore.instance
+        .collection('species')
+        .doc(species.toLowerCase())
+        .collection('ponds')
+        .orderBy('timestamp', descending: true)
+        .limit(1)
+        .get();
 
-        List<String> speciesList = ['milkfish', 'shrimp (pacific white)', 'tilapia (nile)']; // Replace with actual species names
+    if (pondsSnapshot.docs.isNotEmpty) {
+      var doc = pondsSnapshot.docs.first;
+      Timestamp? ts = doc['timestamp'];
 
-        DocumentReference? latestDocRef;
-
-        for (String species in speciesList) {
-          // Get the latest pond for the species, sorted by timestamp descending
-          QuerySnapshot pondSnapshot = await FirebaseFirestore.instance
-              .collection('species')
-              .doc(species.toLowerCase())
-              .collection('ponds')
-              .orderBy('timestamp', descending: true) // Order by timestamp, most recent first
-              .limit(1)  // Only get the most recent pond
-              .get();
-
-          if (pondSnapshot.docs.isNotEmpty) {
-            // Get the most recent pond reference
-            latestDocRef = pondSnapshot.docs.first.reference;
-
-            // Update the most recent pond document with the new sensor data
-            await latestDocRef.update({
-              "salinity": salinity,
-              "temperature": temperature,
-              //"timestamp": FieldValue.serverTimestamp(),  // Update the timestamp as well
-            });
-
-            // Show notification
-            await showNotification(
-              "Sensor Log Updated for $species",
-              "Salinity: $salinity ppt, Temperature: $temperature°C",
-            );
-
-            print("✅ Updated most recent pond data successfully!");
-          } else {
-            print("⚠️ No ponds found for species: $species.");
-          }
-        }
-      } else {
-        print("⚠️ Failed to fetch salinity/temperature data.");
+      if (latestTimestamp == null || ts!.compareTo(latestTimestamp) > 0) {
+        latestTimestamp = ts;
+        latestPondId = doc.id;
+        latestSpecies = species;
       }
-    } catch (e) {
-      print("❌ Error logging sensor data: $e");
     }
-  });
+  }
+
+  if (latestPondId != null && latestSpecies != null) {
+    // Start logging to the latest pond
+    SensorLogger().startLogging(latestPondId, latestSpecies);
+    print("✅ Started logging to latest pond: $latestPondId ($latestSpecies)");
+  } else {
+    print("⚠️ No valid pond found for logging.");
+  }
 }
 
 void main() async {
@@ -176,8 +158,18 @@ void main() async {
     ),
   );
 
+  // Start real-time pond monitoring for the species list
+  SensorLogger().startRealtimePondTracking([
+    'milkfish',
+    'shrimp (pacific white)',
+    'tilapia (nile)',
+  ]);
+
+  // Optionally initialize notifications
   initializeNotifications();
-  startSensorLogging(); // Start the periodic sensor logging
+
+  // Optionally start the sensor logger on app startup
+  startSensorLoggerOnStartup();
 
   runApp(MyApp());
 }
@@ -193,3 +185,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
