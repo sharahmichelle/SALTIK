@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'edit_pond.dart';
+import 'statistics_graph.dart';
 
 class PondDetailPage extends StatelessWidget {
   final String speciesName;
@@ -21,10 +22,10 @@ class PondDetailPage extends StatelessWidget {
         .snapshots();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
           speciesName.toUpperCase(),
@@ -100,78 +101,84 @@ class PondDetailPage extends StatelessWidget {
                     if (salinity == null) {
                       salinityColor = Colors.grey;
                     } else if (salinity < lowThreshold) {
-                      salinityColor = Colors.yellow; 
+                      salinityColor = const Color.fromARGB(255, 238, 221, 66);
                     } else if (salinity > highThreshold) {
-                      salinityColor = Colors.red;   
+                      salinityColor = const Color.fromARGB(255, 179, 38, 28);
                     } else {
-                      salinityColor = Colors.blue;
+                      salinityColor = const Color.fromARGB(255, 34, 131, 210);
                     }
-                    
-                    return Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: salinityColor,
-                          child: isEmpty
-                              ? null
-                              : Text(
-                                  "${salinity?.toInt() ?? 0} ppt",
-                                  style: GoogleFonts.workSans(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          "Pond ${index + 1}",
-                          style: GoogleFonts.workSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text("Status: ${pond["status"]}", style: const TextStyle(fontSize: 12)),
-                        Text("Salinity: ${salinity?.toInt() ?? 0} ppt", style: const TextStyle(fontSize: 12)),
-                        Text("Life Stage: ${pond["lifestage"] ?? 'Unknown'}", style: const TextStyle(fontSize: 12)),
 
-                        // if (!isEmpty) ...[
-                        //   Text("Salinity: ${salinity?.toInt() ?? 0} ppt", style: const TextStyle(fontSize: 12)),
-                        //   Text("Life Stage: ${pond["lifestage"] ?? 'Unknown'}", style: const TextStyle(fontSize: 12)),
-                        // ],
-                        const Spacer(),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AddEditPondPage(
-                                      speciesName: speciesName,
-                                      pondId: pond["id"],
-                                      pondData: pond,
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => StatisticsPage(pondId: pond['id'], speciesName: speciesName,), 
+                          ),
+                        );
+                      },
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: salinityColor,
+                            child: isEmpty
+                                ? null
+                                : Text(
+                                    "${salinity?.toInt() ?? 0} ppt",
+                                    style: GoogleFonts.workSans(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      fontSize: 18,
                                     ),
                                   ),
-                                );
-                              },
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            "Pond ${index + 1}",
+                            style: GoogleFonts.workSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => deletePond(context, speciesName, pond["id"]),
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                          Text("Status: ${pond["status"] ?? 'Unknown'}", style: const TextStyle(fontSize: 12)),
+                          Text("Salinity: ${salinity?.toInt() ?? 0} ppt", style: const TextStyle(fontSize: 12)),
+                          Text("Life Stage: ${pond["lifestage"] ?? 'Unknown'}", style: const TextStyle(fontSize: 12)),
+
+                          const Spacer(), // Removed misplaced Spacer()
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AddEditPondPage(
+                                        speciesName: speciesName,
+                                        pondId: pond["id"],
+                                        pondData: pond,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => deletePond(context, speciesName, pond["id"]),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     );
                   },
                 );
               },
             ),
           ),
-          
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -182,6 +189,8 @@ class PondDetailPage extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (context) => AddEditPondPage(
                         speciesName: speciesName,
+                        pondId: null,
+                        pondData: null,
                       ),
                     ),
                   );
@@ -200,30 +209,46 @@ class PondDetailPage extends StatelessWidget {
   }
 
   Future<void> deletePond(BuildContext context, String species, String pondId) async {
-    bool confirmDelete = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Confirm Deletion"),
-        content: const Text("Are you sure you want to delete this pond?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete", style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
+  bool confirmDelete = await showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Confirm Deletion"),
+      content: const Text("Are you sure you want to delete this pond? This will also delete all associated data."),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete", style: TextStyle(color: Colors.red))),
+      ],
+    ),
+  );
 
-    if (confirmDelete == true) {
-      try {
-        await FirebaseFirestore.instance
-            .collection('species')
-            .doc(species.toLowerCase())
-            .collection('ponds')
-            .doc(pondId)
-            .delete();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Pond deleted successfully!")));
-      } catch (e) {
-        print("Error deleting pond: $e");
+  if (confirmDelete == true) {
+    try {
+      // First, delete all sensor logs under this pond
+      QuerySnapshot sensorLogsSnapshot = await FirebaseFirestore.instance
+          .collection('species')
+          .doc(species.toLowerCase())
+          .collection('ponds')
+          .doc(pondId)
+          .collection('sensor_logs')
+          .get();
+
+      // Delete each sensor log
+      for (var logDoc in sensorLogsSnapshot.docs) {
+        await logDoc.reference.delete();
       }
+
+      // Now delete the pond document itself
+      await FirebaseFirestore.instance
+          .collection('species')
+          .doc(species.toLowerCase())
+          .collection('ponds')
+          .doc(pondId)
+          .delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Pond and associated data deleted successfully!")));
+    } catch (e) {
+      print("Error deleting pond or associated data: $e");
     }
   }
+}
 }

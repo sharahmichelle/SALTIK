@@ -45,7 +45,7 @@ android {
     // compileSdk = flutter.compileSdkVersion
     // ndkVersion = flutter.ndkVersion
     namespace = "com.example.saltik"
-    compileSdk = 34  // Set this explicitly to match your SDK version
+    compileSdk = 35  // Set this explicitly to match your SDK version
     ndkVersion = "25.1.8937393"  // Use a valid NDK version or remove if not needed
 
     compileOptions {
