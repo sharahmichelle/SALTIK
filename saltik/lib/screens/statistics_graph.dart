@@ -117,7 +117,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   double salinity = (data['salinity'] ?? 0).toDouble();
                   double temperature = (data['temperature'] ?? 0).toDouble();
                   Timestamp timestamp = data['timestamp'] as Timestamp;
-                  String dateLabel = DateFormat('MM/dd/yy').format(timestamp.toDate());
+                  String datePart = DateFormat('MM/dd/yy').format(timestamp.toDate());
+                  String timePart = DateFormat('hh:mm a').format(timestamp.toDate());
+                  String dateLabel = '$datePart\n$timePart';
 
                   dateLabels.add(dateLabel);
                   salinityData.add(FlSpot(index.toDouble(), salinity));
@@ -138,13 +140,39 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                   reservedSize: 80,
                                   getTitlesWidget: (value, meta) {
                                     int index = value.toInt();
-                                    return index < dateLabels.length
-                                        ? Transform.rotate(
-                                        angle: -0.3,
-                                        child: Text(dateLabels[index], style: GoogleFonts.workSans(fontSize: 10)),
-                                      )
-                                        : const Text("");
-                                  },
+                                    if (index >= dateLabels.length) return const Text("");
+
+                                    List<String> parts = dateLabels[index].split('\n');
+                                    String date = parts[0];
+                                    String time = parts.length > 1 ? parts[1] : "";
+
+                                    return Transform.rotate(
+                                      angle: -0.3,
+                                      child: RichText(
+                                        textAlign: TextAlign.center,
+                                        text: TextSpan(
+                                          children: [
+                                            TextSpan(
+                                              text: "$date\n",
+                                              style: GoogleFonts.workSans(
+                                                fontSize: 10,
+                                                color: Colors.grey[800],
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: time,
+                                              style: GoogleFonts.workSans(
+                                                fontSize: 10,
+                                                color: Colors.black, // Time in black
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }
+
                                 ),
                               ),
                             ),

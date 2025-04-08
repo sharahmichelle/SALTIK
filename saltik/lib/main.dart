@@ -69,6 +69,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:intl/intl.dart';
 import 'screens/splashscreen.dart';
+import 'authenticate/signin.dart';
 import 'screens/sensor_logger.dart';
 
 void initializeNotifications() {
@@ -108,43 +109,43 @@ Future<void> showNotification(String title, String body) async {
 }
 
 /// Start Sensor Logging on App Startup
-Future<void> startSensorLoggerOnStartup() async {
-  List<String> speciesList = ['milkfish', 'shrimp (pacific white)', 'tilapia (nile)'];
+// Future<void> startSensorLoggerOnStartup() async {
+//   List<String> speciesList = ['milkfish', 'shrimp (pacific white)', 'tilapia (nile)'];
 
-  String? latestPondId;
-  String? latestSpecies;
-  Timestamp? latestTimestamp;
+//   String? latestPondId;
+//   String? latestSpecies;
+//   Timestamp? latestTimestamp;
 
-  // Fetch the latest pond from all species
-  for (String species in speciesList) {
-    QuerySnapshot pondsSnapshot = await FirebaseFirestore.instance
-        .collection('species')
-        .doc(species.toLowerCase())
-        .collection('ponds')
-        .orderBy('timestamp', descending: true)
-        .limit(1)
-        .get();
+//   // Fetch the latest pond from all species
+//   for (String species in speciesList) {
+//     QuerySnapshot pondsSnapshot = await FirebaseFirestore.instance
+//         .collection('species')
+//         .doc(species.toLowerCase())
+//         .collection('ponds')
+//         .orderBy('timestamp', descending: true)
+//         .limit(1)
+//         .get();
 
-    if (pondsSnapshot.docs.isNotEmpty) {
-      var doc = pondsSnapshot.docs.first;
-      Timestamp? ts = doc['timestamp'];
+//     if (pondsSnapshot.docs.isNotEmpty) {
+//       var doc = pondsSnapshot.docs.first;
+//       Timestamp? ts = doc['timestamp'];
 
-      if (latestTimestamp == null || ts!.compareTo(latestTimestamp) > 0) {
-        latestTimestamp = ts;
-        latestPondId = doc.id;
-        latestSpecies = species;
-      }
-    }
-  }
+//       if (latestTimestamp == null || ts!.compareTo(latestTimestamp) > 0) {
+//         latestTimestamp = ts;
+//         latestPondId = doc.id;
+//         latestSpecies = species;
+//       }
+//     }
+//   }
 
-  if (latestPondId != null && latestSpecies != null) {
-    // Start logging to the latest pond
-    SensorLogger().startLogging(latestPondId, latestSpecies);
-    print("✅ Started logging to latest pond: $latestPondId ($latestSpecies)");
-  } else {
-    print("⚠️ No valid pond found for logging.");
-  }
-}
+//   if (latestPondId != null && latestSpecies != null) {
+//     // Start logging to the latest pond
+//     SensorLogger().startLogging(latestPondId, latestSpecies);
+//     print("✅ Started logging to latest pond: $latestPondId ($latestSpecies)");
+//   } else {
+//     print("⚠️ No valid pond found for logging.");
+//   }
+// }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -169,7 +170,7 @@ void main() async {
   initializeNotifications();
 
   // Optionally start the sensor logger on app startup
-  startSensorLoggerOnStartup();
+  //startSensorLoggerOnStartup();
 
   runApp(MyApp());
 }
