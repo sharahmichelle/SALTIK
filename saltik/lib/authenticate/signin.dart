@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:saltik/screens/home_page.dart';
 import 'signup.dart';
+import 'package:saltik/screens/sensor_logger.dart';
+import 'package:saltik/screens/sensor_logger_startup.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -57,6 +59,15 @@ class _SignInPageState extends State<SignInPage> {
       }
 
       _showSnackbar("Login Successful!");
+
+      // ✅ Start sensor logging and tracking after login
+      await startSensorLoggerOnStartup();
+
+      // SensorLogger().startRealtimePondTracking([
+      //   'milkfish',
+      //   'shrimp (pacific white)',
+      //   'tilapia (nile)',
+      // ]);
 
       Navigator.pushReplacement(
         context,
