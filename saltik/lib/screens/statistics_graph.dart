@@ -136,7 +136,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                               show: true,
                               drawVerticalLine: false,
                               drawHorizontalLine: true,
-                              horizontalInterval: 10,
+                              horizontalInterval: 10,  // LINE INTERVAL!!!!!
                               getDrawingHorizontalLine: (value) {
                                 return FlLine(
                                   color: Colors.grey.withOpacity(0.3), // softer color
@@ -147,12 +147,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             ),
                             titlesData: FlTitlesData(
                               topTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: false), // 👈 disables numbers above the graph
+                                sideTitles: SideTitles(showTitles: false),
                               ),
                               bottomTitles: AxisTitles(
                                 sideTitles: SideTitles(
                                   showTitles: true,
-                                  reservedSize: 70,
+                                  reservedSize: 70,  // ADJUSTED SIZE FOR INTERVAL!!!!
                                   getTitlesWidget: (value, meta) {
                                     int index = value.toInt();
                                     if (index >= dateLabels.length) return const Text("");
