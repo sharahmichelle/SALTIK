@@ -88,7 +88,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.workSans(fontSize: 15, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 45),
               StreamBuilder<QuerySnapshot>(
                 stream: _getDataStream(),
                 builder: (context, snapshot) {
@@ -126,18 +126,33 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   temperatureData.add(FlSpot(index.toDouble(), temperature));
                   index++;
                 }
-
                   return Column(
                     children: [
                       SizedBox(
                         height: 300,
                         child: LineChart(
                           LineChartData(
+                            gridData: FlGridData(
+                              show: true,
+                              drawVerticalLine: false,
+                              drawHorizontalLine: true,
+                              horizontalInterval: 10,
+                              getDrawingHorizontalLine: (value) {
+                                return FlLine(
+                                  color: Colors.grey.withOpacity(0.3), // softer color
+                                  strokeWidth: 1,
+                                  dashArray: null,
+                                );
+                              },
+                            ),
                             titlesData: FlTitlesData(
+                              topTitles: AxisTitles(
+                                sideTitles: SideTitles(showTitles: false), // 👈 disables numbers above the graph
+                              ),
                               bottomTitles: AxisTitles(
                                 sideTitles: SideTitles(
                                   showTitles: true,
-                                  reservedSize: 80,
+                                  reservedSize: 70,
                                   getTitlesWidget: (value, meta) {
                                     int index = value.toInt();
                                     if (index >= dateLabels.length) return const Text("");
