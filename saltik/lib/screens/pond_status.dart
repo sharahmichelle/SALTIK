@@ -7,10 +7,12 @@ import 'statistics_graph.dart';
 class PondDetailPage extends StatelessWidget {
   final String speciesName;
   final String scientificName;
+  final String userRole;
 
   const PondDetailPage({
     Key? key,
     required this.speciesName,
+    required this.userRole,
     required this.scientificName,
   }) : super(key: key);
 
@@ -153,21 +155,40 @@ class PondDetailPage extends StatelessWidget {
                               IconButton(
                                 icon: const Icon(Icons.edit, color: Colors.blue),
                                 onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => AddEditPondPage(
-                                        speciesName: speciesName,
-                                        pondId: pond["id"],
-                                        pondData: pond,
-                                      ),
-                                    ),
+                                if (userRole != "Laborer") {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("Only laborers are allowed to edit a pond.")),
                                   );
-                                },
+                                  return;
+                                }
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AddEditPondPage(
+                                      speciesName: speciesName,
+                                      userRole: userRole,
+                                      pondId: pond["id"],
+                                      pondData: pond,
+                                    ),
+                                  ),
+                                );
+                              },
+
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => deletePond(context, speciesName, pond["id"]),
+                                onPressed: () {
+                                if (userRole != "Laborer") {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("Only laborers are allowed to delete a pond.")),
+                                  );
+                                  return;
+                                }
+
+                                deletePond(context, speciesName, pond["id"]);
+                              },
+
                               ),
                             ],
                           ),
@@ -184,17 +205,25 @@ class PondDetailPage extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddEditPondPage(
-                        speciesName: speciesName,
-                        pondId: null,
-                        pondData: null,
-                      ),
-                    ),
+                if (userRole != "Laborer") {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Only laborers are allowed to add a pond.")),
                   );
-                },
+                  return;
+                }
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddEditPondPage(
+                      speciesName: speciesName,
+                      userRole: userRole,
+                      pondId: null,
+                      pondData: null,
+                    ),
+                  ),
+                );
+              },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.grey,
                   minimumSize: const Size(double.infinity, 50),
@@ -215,7 +244,7 @@ class PondDetailPage extends StatelessWidget {
       title: const Text("Confirm Deletion"),
       content: const Text("Are you sure you want to delete this pond? This will also delete all associated data."),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel", style: TextStyle(color: Colors.blue),)),
         TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete", style: TextStyle(color: Colors.red))),
       ],
     ),

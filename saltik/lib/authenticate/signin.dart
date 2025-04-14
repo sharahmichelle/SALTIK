@@ -58,6 +58,9 @@ class _SignInPageState extends State<SignInPage> {
         throw FirebaseAuthException(code: 'unknown', message: 'Sign-in failed.');
       }
 
+      DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+      String userRole = userDoc['role'] ?? 'Laborer'; // Default to "Laborer" if not found
+
       _showSnackbar("Login Successful!");
 
       // ✅ Start sensor logging and tracking after login
@@ -71,7 +74,7 @@ class _SignInPageState extends State<SignInPage> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MainScreen()),
+        MaterialPageRoute(builder: (context) => MainScreen(userRole: userRole)),
       );
     } on FirebaseAuthException catch (e) {
       _handleAuthError(e);
