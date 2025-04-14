@@ -41,12 +41,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   Stream<QuerySnapshot> _getDataStream() {
     Query query = FirebaseFirestore.instance
-        .collection('species')
-        .doc(widget.speciesName.toLowerCase())
-        .collection('ponds')
-        .doc(widget.pondId)
-        .collection('sensor_logs')
-        .orderBy('timestamp', descending: false);
+           
+         .collection('species')
+         .doc(widget.speciesName.toLowerCase())
+         .collection('ponds')
+         .doc(widget.pondId)
+         .collection('sensor_logs')
+         .orderBy('timestamp', descending: false);
 
     if (_startDate != null) {
       query = query.where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(_startDate!));
@@ -64,10 +65,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          "Data Trends",
-          style: GoogleFonts.workSans(fontWeight: FontWeight.normal),
+          "STATISTICS",
+          style: GoogleFonts.workSans(fontWeight: FontWeight.bold),
         ),
-        // centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
@@ -83,12 +83,45 @@ class _StatisticsPageState extends State<StatisticsPage> {
             children: [
               const SizedBox(height: 0),
               Text(
-                "Here is the graph showing the changes in salinity levels and temperature of \n"
-                "${widget.speciesName.toLowerCase()}",
+                "SALINITY AND \n TEMPERATURE \n CHANGES",
+                style: GoogleFonts.workSans(fontWeight: FontWeight.bold, color: Color(0xFF545454), fontSize: 18, height: 1.2),
                 textAlign: TextAlign.center,
-                style: GoogleFonts.workSans(fontSize: 15, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 45),
+              const SizedBox(height: 15),
+              Text.rich(
+                TextSpan(
+                  text: "Here is the graph showing the changes \n in salinity levels and temperature of \n",
+                  style: GoogleFonts.workSans(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF545454)),
+                  children: [
+                    TextSpan(
+                      text: widget.speciesName.toLowerCase(),
+                      style: GoogleFonts.workSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold, 
+                        color: Color(0xFF545454)
+                      ),
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 15),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(width: 12, height: 12, color: Colors.blue),
+                  const SizedBox(width: 2),
+                  Text("Salinity", style: GoogleFonts.workSans(color: Color(0xFF545454), fontSize:12)),
+                  const SizedBox(width: 10),
+                  Container(width: 12, height: 12, color: Colors.grey),
+                  const SizedBox(width: 2),
+                  Text("Temperature", style: GoogleFonts.workSans(color: Color(0xFF545454), fontSize:12)),
+                ],
+              ),
+              const SizedBox(height: 15),
+
+              // LineChart Widget
               StreamBuilder<QuerySnapshot>(
                 stream: _getDataStream(),
                 builder: (context, snapshot) {
@@ -107,44 +140,56 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
                   int index = 0;
                   for (var doc in docs) {
-                  var data = doc.data() as Map<String, dynamic>;
-                  
-                  // Ensure the timestamp exists
-                  if (data['timestamp'] == null) {
-                    continue; // Skip this document if timestamp is missing
+                    var data = doc.data() as Map<String, dynamic>;
+
+                    // Ensure the timestamp exists
+                    if (data['timestamp'] == null) {
+                      continue; // Skip this document if timestamp is missing
+                    }
+
+                    double salinity = (data['salinity'] ?? 0).toDouble();
+                    double temperature = (data['temperature'] ?? 0).toDouble();
+                    Timestamp timestamp = data['timestamp'] as Timestamp;
+
+                    // Convert UTC timestamp to local time (in this case, Philippine Time)
+                    DateTime utcDateTime = timestamp.toDate();
+                    DateTime localDateTime = utcDateTime.add(Duration(hours: 8));
+                    // Now format the local time to display correctly
+                    String datePart = DateFormat('MM/dd/yy').format(localDateTime);
+                    String timePart = DateFormat('hh:mm a').format(localDateTime);
+                    String dateLabel = '$datePart\n$timePart';
+
+                    // String datePart = DateFormat('MM/dd/yy').format(timestamp.toDate());
+                    // String timePart = DateFormat('hh:mm a').format(timestamp.toDate());
+                    // String dateLabel = '$datePart\n$timePart';
+
+                    dateLabels.add(dateLabel);
+                    salinityData.add(FlSpot(index.toDouble(), salinity));
+                    temperatureData.add(FlSpot(index.toDouble(), temperature));
+                    index++;
                   }
 
-                  double salinity = (data['salinity'] ?? 0).toDouble();
-                  double temperature = (data['temperature'] ?? 0).toDouble();
-                  Timestamp timestamp = data['timestamp'] as Timestamp;
-                  String datePart = DateFormat('MM/dd/yy').format(timestamp.toDate());
-                  String timePart = DateFormat('hh:mm a').format(timestamp.toDate());
-                  String dateLabel = '$datePart\n$timePart';
-
-                  dateLabels.add(dateLabel);
-                  salinityData.add(FlSpot(index.toDouble(), salinity));
-                  temperatureData.add(FlSpot(index.toDouble(), temperature));
-                  index++;
-                }
                   return Column(
                     children: [
                       SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.8,
                         height: 300,
                         child: LineChart(
                           LineChartData(
+                            borderData: FlBorderData(show: false), 
                             gridData: FlGridData(
                               show: true,
                               drawVerticalLine: false,
                               drawHorizontalLine: true,
-                              horizontalInterval: 10,  // LINE INTERVAL!!!!!
+                              horizontalInterval: 5,  // LINE INTERVAL!!!!!  
                               getDrawingHorizontalLine: (value) {
                                 return FlLine(
                                   color: Colors.grey.withOpacity(0.3), // softer color
                                   strokeWidth: 1,
-                                  dashArray: null,
+                                  // dashArray: null,
                                 );
                               },
-                            ),
+                            ), 
                             titlesData: FlTitlesData(
                               topTitles: AxisTitles(
                                 sideTitles: SideTitles(showTitles: false),
@@ -161,79 +206,97 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                     String date = parts[0];
                                     String time = parts.length > 1 ? parts[1] : "";
 
-                                    return Transform.rotate(
-                                      angle: -0.3,
-                                      child: RichText(
-                                        textAlign: TextAlign.center,
-                                        text: TextSpan(
-                                          children: [
-                                            TextSpan(
-                                              text: "$date\n",
-                                              style: GoogleFonts.workSans(
-                                                fontSize: 10,
-                                                color: Colors.grey[800],
+                  
+                                     return Padding(
+                                      padding: const EdgeInsets.only(top:20),
+                                      child: Transform.rotate(
+                                        angle: -1.3,
+                                        child: RichText(
+                                          textAlign: TextAlign.center,
+                                          text: TextSpan(
+                                            children: [
+                                              TextSpan(
+                                                text: "$date\n",
+                                                style: GoogleFonts.workSans(
+                                                  fontSize: 10,
+                                                  color: Colors.grey[800],
+                                                ),
                                               ),
-                                            ),
                                             TextSpan(
                                               text: time,
                                               style: GoogleFonts.workSans(
                                                 fontSize: 10,
-                                                color: Colors.black, // Time in black
+                                                color: Colors.black, 
                                                 fontWeight: FontWeight.bold,
+                                               ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                  }
-
+                                      )
+                                     );
+                                  },
                                 ),
+                              ),
+                               leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,  
+                                  interval: 5,
+                                  reservedSize: 30,  // Adjust the reserved space for left Y-axis
+                                  getTitlesWidget: (value, meta) {
+                                    return Text(
+                                      value.toStringAsFixed(0), // Display Y-axis value (integer format)
+                                      style: GoogleFonts.workSans(fontSize: 12, color: Colors.black),
+                                    );
+                                  },
+                                ),
+                              ),
+                              rightTitles: AxisTitles(
+                                sideTitles: SideTitles(showTitles: false), 
                               ),
                             ),
                             lineBarsData: [
                               LineChartBarData(
                                 spots: salinityData,
                                 color: Colors.blue,
-                                isCurved: true,
+                                isCurved: false,
                                 barWidth: 3,
+                                dotData: FlDotData(show: true), 
+                               
                               ),
                               LineChartBarData(
                                 spots: temperatureData,
                                 color: Colors.grey,
-                                isCurved: true,
+                                isCurved: false,
                                 barWidth: 3,
+                                dotData: FlDotData(show: true), 
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(width: 12, height: 12, color: Colors.blue),
-                          const SizedBox(width: 5),
-                          const Text("Salinity"),
-                          const SizedBox(width: 16),
-                          Container(width: 12, height: 12, color: Colors.grey),
-                          const SizedBox(width: 5),
-                          const Text("Temperature"),
-                        ],
-                      ),
                     ],
                   );
                 },
               ),
-              const SizedBox(height: 60),
+              const SizedBox(height: 30),
+              
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildDateSelector(context, "Start Date", true),
-                  _buildDateSelector(context, "End Date", false),
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.8,  // Set width to 80% of the screen
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildDateSelector(context, "Start Date", true),
+                        _buildDateSelector(context, "End Date", false),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(minimumSize: const Size(30, 30), backgroundColor: const Color.fromARGB(255, 99, 203, 251)),
                 onPressed: () {
@@ -247,7 +310,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     ),
                   );
                 },
-                child: const Text("See in list format", style: TextStyle(color: Colors.black)),
+                child: const Text("See in list format", style: TextStyle(color: Colors.black, fontSize:12, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -257,33 +320,39 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   Widget _buildDateSelector(BuildContext context, String title, bool isStart) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: GoogleFonts.workSans(fontWeight: FontWeight.bold)),
-        GestureDetector(
-          onTap: () => _selectDate(context, isStart),
-          child: Container(
-            width: 150,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  (isStart ? _startDate : _endDate) != null
-                      ? DateFormat('yyyy-MM-dd').format((isStart ? _startDate : _endDate)!)
-                      : "Select",
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(title, style: GoogleFonts.workSans(fontWeight: FontWeight.w600, fontSize: 12, color: Color(0xFF545454))),
+      GestureDetector(
+        onTap: () => _selectDate(context, isStart),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 15),
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Row(
+            children: [
+              FittedBox(
+                child: Text(
+                  isStart
+                      ? (_startDate != null
+                          ? DateFormat('MM/dd/yyyy').format(_startDate!)
+                          : 'Select Start Date')
+                      : (_endDate != null
+                          ? DateFormat('MM/dd/yyyy').format(_endDate!)
+                          : 'Select End Date'),
+                  style: GoogleFonts.workSans(fontSize: 10,color: Color(0xFF545454)),
                 ),
-                const Icon(Icons.calendar_today),
-              ],
-            ),
+              ),
+              const SizedBox(width:5), 
+              const Icon(Icons.calendar_today, size: 20),
+            ],
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 }
