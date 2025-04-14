@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+//import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -23,7 +23,7 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   File? _image;
-  final ImagePicker _picker = ImagePicker();
+  //final ImagePicker _picker = ImagePicker();
   String _selectedRole = "Laborer";
   final _formKey = GlobalKey<FormState>();
 
@@ -34,17 +34,17 @@ class _SignUpPageState extends State<SignUpPage> {
 
   bool _isLoading = false;
 
-  Future<void> _pickImageFromGallery() async {
-    await requestPermissions();
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) setState(() => _image = File(pickedFile.path));
-  }
+  // Future<void> _pickImageFromGallery() async {
+  //   await requestPermissions();
+  //   final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+  //   if (pickedFile != null) setState(() => _image = File(pickedFile.path));
+  // }
 
-  Future<void> _takePhoto() async {
-    await requestPermissions();
-    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
-    if (pickedFile != null) setState(() => _image = File(pickedFile.path));
-  }
+  // Future<void> _takePhoto() async {
+  //   await requestPermissions();
+  //   final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+  //   if (pickedFile != null) setState(() => _image = File(pickedFile.path));
+  // }
 
   Future<String?> _uploadImage(File imageFile) async {
     try {
@@ -89,7 +89,9 @@ class _SignUpPageState extends State<SignUpPage> {
       });
 
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(
+          builder: (context) => 
+          MainScreen(userRole: _selectedRole),));
       }
     } catch (e) {
       print("Error saving user data: $e");

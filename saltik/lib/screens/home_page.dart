@@ -5,7 +5,9 @@ import '../screens/history.dart';
 import '../screens/profile.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  final String userRole;
+
+  const MainScreen({Key? key, required this.userRole}) : super(key: key);
 
   @override
   MainScreenState createState() => MainScreenState();
@@ -13,24 +15,32 @@ class MainScreen extends StatefulWidget {
 
 class MainScreenState extends State<MainScreen> {
   int selectedIndex = 0;
+  late List<Widget> _pages; // Declare it as late
 
-  final List<Widget> _pages = [
-    HomePage(),
-    const PondPage(),
-    const HistoryPage(),
-    const ProfilePage(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+
+    // Now widget.userRole is accessible here
+    _pages = [
+      HomePage(),
+      PondPage(userRole: widget.userRole), // Pass userRole safely
+      const HistoryPage(),
+      const ProfilePage(),
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
       selectedIndex = index;
     });
   }
+
   void changeTab(int index) {
-  setState(() {
-    selectedIndex = index;
-  });
-}
+    setState(() {
+      selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

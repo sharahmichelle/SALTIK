@@ -4,7 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'pond_status.dart';
 
 class PondPage extends StatefulWidget {
-  const PondPage({Key? key}) : super(key: key);
+   final String userRole;
+
+  const PondPage({Key? key, required this.userRole}) : super(key: key);
 
   @override
   _PondPageState createState() => _PondPageState();
@@ -123,6 +125,7 @@ class _PondPageState extends State<PondPage> {
             builder: (context) => PondDetailPage(
               speciesName: name, // Pass species name
               scientificName: scientificName, // Pass scientific name
+              userRole: widget.userRole,
             ),
           ),
         );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:saltik/screens/home_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -13,10 +15,23 @@ class _HomePageState extends State<HomePage> {
   String temperature = "Loading...";
   String salinity = "Loading...";
 
+  String? userRole;
+
+Future<void> _fetchUserRole() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+  setState(() {
+    userRole = doc.data()?['role'];
+  });
+}
+
   @override
   void initState() {
     super.initState();
     _initializeFirebaseListeners();
+    _fetchUserRole();
   }
 
   void _initializeFirebaseListeners() {
@@ -38,6 +53,7 @@ class _HomePageState extends State<HomePage> {
       }
     });
   }
+
 
   @override
   Widget build(BuildContext context) {

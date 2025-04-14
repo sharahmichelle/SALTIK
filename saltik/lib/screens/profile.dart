@@ -58,11 +58,13 @@ class _ProfilePageState extends State<ProfilePage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false), // Stay on page
-              child: const Text("No"),
+              child: const Text("No",
+              style: TextStyle(color: Colors.blue),),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true), // Proceed
-              child: const Text("Yes"),
+              child: const Text("Yes",
+              style: TextStyle(color: Colors.red),),
             ),
           ],
         );

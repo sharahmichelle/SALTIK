@@ -10,13 +10,16 @@ class AddEditPondPage extends StatefulWidget {
   final String speciesName;
   final String? pondId;
   final Map<String, dynamic>? pondData;
+  final String userRole;
 
-  const AddEditPondPage({
-    Key? key,
-    required this.speciesName,
-    this.pondId,
-    this.pondData,
-  }) : super(key: key);
+const AddEditPondPage({
+  Key? key,
+  required this.speciesName,
+  required this.userRole,
+  this.pondId,
+  this.pondData,
+}) : super(key: key);
+
 
   @override
   _AddEditPondPageState createState() => _AddEditPondPageState();
@@ -122,6 +125,8 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
     });
   }
 
+
+
   /// Start periodic sensor data logging every 5 seconds (for testing)
   // void _startSensorLogging() {
   //   if (_sensorLoggingTimer != null && _sensorLoggingTimer!.isActive) {
@@ -177,14 +182,20 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
   //   }
   // }
 
-  /// Save pond data and start logging sensor data
   Future<void> savePond() async {
-  if (selectedLifeStage == null || selectedStatus == null || salinity == null || temperature == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Please select all fields and ensure sensor data is available")),
-    );
-    return;
-  }
+    if (widget.userRole != "Laborer") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You do not have permission to perform this action.")),
+      );
+      return;
+    }
+
+    if (selectedLifeStage == null || selectedStatus == null || salinity == null || temperature == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select all fields and ensure sensor data is available")),
+      );
+      return;
+    }
 
   final data = {
     "lifestage": selectedLifeStage,
@@ -224,7 +235,6 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
     );
   }
 }
-
 
   @override
   Widget build(BuildContext context) {
