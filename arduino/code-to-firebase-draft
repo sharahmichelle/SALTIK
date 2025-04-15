@@ -1,0 +1,197 @@
+#include <WiFi.h>
+#include <Wire.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <DFRobot_ESP_EC.h>
+#include <Firebase_ESP_Client.h>
+#include "addons/TokenHelper.h"  
+
+// WiFi credentials
+#define WIFI_SSID "your_wifi_ssid"
+#define WIFI_PASSWORD "your_wifi_password"
+
+// Firebase project credentials
+#define API_KEY "your_firebase_web_api_key"
+#define DATABASE_URL "your_firebase_database_url"  // e.g., https://your-project-id.firebaseio.com/
+
+// Firebase objects
+FirebaseData fbdo;
+FirebaseAuth auth;
+FirebaseConfig config;
+
+// Motor Pins
+const int Motor1_PWM_L = 18;
+const int Motor1_PWM_R = 19;
+const int Motor1_EN_L = 25;
+const int Motor1_EN_R = 26;
+const int Motor2_PWM_L = 22;
+const int Motor2_PWM_R = 23;
+const int Motor2_EN_L = 27;
+const int Motor2_EN_R = 32;
+
+// Sensor Pins
+#define ONE_WIRE_BUS 4
+#define EC_SENSOR_PIN 35
+
+// Salinity thresholds
+const float SALINITY_MIN = 5.0;
+const float SALINITY_MAX = 10.0;
+
+// Temperature compensation
+#define ALPHA 0.022
+#define K 0.8
+
+// Sensor objects
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+DFRobot_ESP_EC ec;
+
+// Variables for error handling
+unsigned long dataMillis = 0;
+bool signupOK = false;
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize motors
+  pinMode(Motor1_PWM_L, OUTPUT);
+  pinMode(Motor1_PWM_R, OUTPUT);
+  pinMode(Motor1_EN_L, OUTPUT);
+  pinMode(Motor1_EN_R, OUTPUT);
+  pinMode(Motor2_PWM_L, OUTPUT);
+  pinMode(Motor2_PWM_R, OUTPUT);
+  pinMode(Motor2_EN_L, OUTPUT);
+  pinMode(Motor2_EN_R, OUTPUT);
+
+  // Initialize sensors
+  sensors.begin();
+  ec.begin();
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db);
+
+  // Connect to WiFi
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to WiFi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println();
+  Serial.print("Connected with IP: ");
+  Serial.println(WiFi.localIP());
+
+  // Firebase configuration
+  config.api_key = API_KEY;
+  config.database_url = DATABASE_URL;
+  
+  // Assign the callback function for token generation
+  config.token_status_callback = tokenStatusCallback;
+  
+  // Sign up (anonymous authentication)
+  if (Firebase.signUp(&config, &auth, "", "")) {
+    Serial.println("Firebase signup successful");
+    signupOK = true;
+  } else {
+    Serial.printf("Firebase signup failed: %s\n", config.signer.signupError.message.c_str());
+  }
+
+  Firebase.begin(&config, &auth);
+  Firebase.reconnectWiFi(true);
+}
+
+void loop() {
+  // Read sensors
+  sensors.requestTemperatures();
+  float temperatureC = sensors.getTempCByIndex(0);
+  float voltage = analogRead(EC_SENSOR_PIN);
+
+  // Calculate EC and salinity
+  float ecValue25 = ec.readEC(voltage, temperatureC);
+  float ecValue = ecValue25 * (1 + ALPHA * (temperatureC - 25));
+  float salinity = ecValue / K;
+
+  // Display readings
+  Serial.print("Temperature: ");
+  Serial.print(temperatureC, 2);
+  Serial.print(" °C, Salinity: ");
+  Serial.print(salinity, 2);
+  Serial.println(" ppt");
+
+  // Pump control logic
+  String pumpStatus;
+  if (salinity > SALINITY_MAX) {
+    activatePump(1);
+    deactivatePump(2);
+    pumpStatus = "freshwater";
+    Serial.println("Freshwater pump is active.");
+  } else if (salinity < SALINITY_MIN) {
+    activatePump(2);
+    deactivatePump(1);
+    pumpStatus = "saltwater";
+    Serial.println("Saltwater pump is active.");
+  } else {
+    deactivatePump(1);
+    deactivatePump(2);
+    pumpStatus = "off";
+    Serial.println("Salinity is optimal.");
+  }
+
+  // Upload to Firebase every 5 seconds
+  if (Firebase.ready() && signupOK && (millis() - dataMillis > 5000 || dataMillis == 0)) {
+    dataMillis = millis();
+    
+    // Create a parent node with timestamp
+    String parentPath = "/readings/" + String(millis());
+    
+    // Set data with error checking
+    if (!Firebase.RTDB.setFloat(&fbdo, parentPath + "/temperature", temperatureC)) {
+      Serial.println("Failed to send temperature: " + fbdo.errorReason());
+    }
+    if (!Firebase.RTDB.setFloat(&fbdo, parentPath + "/ec", ecValue)) {
+      Serial.println("Failed to send EC: " + fbdo.errorReason());
+    }
+    if (!Firebase.RTDB.setFloat(&fbdo, parentPath + "/salinity", salinity)) {
+      Serial.println("Failed to send salinity: " + fbdo.errorReason());
+    }
+    if (!Firebase.RTDB.setString(&fbdo, parentPath + "/pump_status", pumpStatus)) {
+      Serial.println("Failed to send pump status: " + fbdo.errorReason());
+    }
+    
+    // Also update the latest readings
+    if (!Firebase.RTDB.setFloat(&fbdo, "/latest/temperature", temperatureC)) {
+      Serial.println("Failed to update latest temperature: " + fbdo.errorReason());
+    }
+    if (!Firebase.RTDB.setFloat(&fbdo, "/latest/salinity", salinity)) {
+      Serial.println("Failed to update latest salinity: " + fbdo.errorReason());
+    }
+    if (!Firebase.RTDB.setString(&fbdo, "/latest/pump_status", pumpStatus)) {
+      Serial.println("Failed to update latest pump status: " + fbdo.errorReason());
+    }
+  }
+
+  delay(2000);
+}
+
+void activatePump(int pumpNumber) {
+  if (pumpNumber == 1) {
+    digitalWrite(Motor1_EN_L, HIGH);
+    digitalWrite(Motor1_EN_R, HIGH);
+    analogWrite(Motor1_PWM_L, 200);
+    analogWrite(Motor1_PWM_R, 0);
+  } else {
+    digitalWrite(Motor2_EN_L, HIGH);
+    digitalWrite(Motor2_EN_R, HIGH);
+    analogWrite(Motor2_PWM_L, 200);
+    analogWrite(Motor2_PWM_R, 0);
+  }
+}
+
+void deactivatePump(int pumpNumber) {
+  if (pumpNumber == 1) {
+    digitalWrite(Motor1_EN_L, LOW);
+    digitalWrite(Motor1_EN_R, LOW);
+  } else {
+    digitalWrite(Motor2_EN_L, LOW);
+    digitalWrite(Motor2_EN_R, LOW);
+  }
+}
