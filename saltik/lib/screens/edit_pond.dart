@@ -37,6 +37,7 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
   final List<String> occupancyStatuses = ["Occupied", "Empty"];
 
   final DatabaseReference _sensorRef = FirebaseDatabase.instance.ref("sensor");
+  final TextEditingController _pondNameController = TextEditingController();
 
   @override
   void initState() {
@@ -48,6 +49,12 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
     salinity = widget.pondData?["salinity"]?.toString() ?? "N/A";
     temperature = widget.pondData?["temperature"]?.toString() ?? "N/A";
 
+    if (widget.pondId != null) {
+       _pondNameController.text = widget.pondData?["pond_name"] ?? "Pond Name";
+    }else {
+      _pondNameController.text = "";
+    }
+
     _initializeNotifications();
     _fetchRealtimeSalinity();
     _fetchRealtimeTemperature();
@@ -55,6 +62,7 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
 
   @override
   void dispose() {
+    _pondNameController.dispose();
     print("🛑 Disposing: Cancelling Timer...");
     if (_sensorLoggingTimer?.isActive ?? false) {
       _sensorLoggingTimer?.cancel();
@@ -182,6 +190,22 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
   //   }
   // }
 
+  Future<void> _autoFillPondName() async {
+  final pondCollection = FirebaseFirestore.instance
+      .collection('species')
+      .doc(widget.speciesName.toLowerCase())
+      .collection('ponds');
+
+  try {
+    final snapshot = await pondCollection.get();
+    int pondCount = snapshot.docs.length + 1;
+    _pondNameController.text = "Pond $pondCount";
+    print("✅ Auto-filled pond name as: Pond $pondCount");
+  } catch (e) {
+    print("❌ Failed to auto-fill pond name: $e");
+  }
+}
+
   Future<void> savePond() async {
     if (widget.userRole != "Laborer") {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -189,6 +213,13 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
       );
       return;
     }
+
+    if (_pondNameController.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please enter a pond name.")),
+    );
+    return;
+  }
 
     if (selectedLifeStage == null || selectedStatus == null || salinity == null || temperature == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -198,6 +229,7 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
     }
 
   final data = {
+    "pond_name": _pondNameController.text.trim(),
     "lifestage": selectedLifeStage,
     "status": selectedStatus,
     "salinity": double.tryParse(salinity ?? "0") ?? 0.0,
@@ -265,6 +297,17 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
                 child: Text(
                   "Select the correct information for your pond",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // ✅ Pond Name Input Field
+              TextField(
+                controller: _pondNameController,
+                decoration: const InputDecoration(
+                  labelText: "Pond Name",
+                  border: OutlineInputBorder(),
                 ),
               ),
 

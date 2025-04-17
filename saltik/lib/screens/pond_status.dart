@@ -73,6 +73,12 @@ class PondDetailPage extends StatelessWidget {
                   };
                 }).toList();
 
+                 ponds.sort((a, b) {
+                  final aName = (a["pond_name"] ?? "").toString().toLowerCase();
+                  final bName = (b["pond_name"] ?? "").toString().toLowerCase();
+                  return aName.compareTo(bName);
+                });
+
                 return GridView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -137,7 +143,7 @@ class PondDetailPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            "Pond ${index + 1}",
+                            pond["pond_name"] ?? "Unnamed Pond",
                             style: GoogleFonts.workSans(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
