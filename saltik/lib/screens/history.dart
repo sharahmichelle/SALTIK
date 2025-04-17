@@ -11,16 +11,35 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-
   TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
 
+  final Map<String, String> _pondNameCache = {};
 
-  Stream<QuerySnapshot> _getAllSensorLogsStream() {
-    return FirebaseFirestore.instance
-        .collectionGroup('sensor_logs')
-        //.orderBy('timestamp', descending: true)
-        .snapshots();
+  Future<String> _getPondName(String speciesId, String pondId) async {
+    final key = "$speciesId/$pondId";
+    if (_pondNameCache.containsKey(key)) {
+      return _pondNameCache[key]!;
+    }
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection("species")
+          .doc(speciesId)
+          .collection("ponds")
+          .doc(pondId)
+          .get();
+
+      if (doc.exists) {
+        final name = doc.data()?["pond_name"] ?? pondId;
+        _pondNameCache[key] = name;
+        return name;
+      } else {
+        return pondId;
+      }
+    } catch (e) {
+      return pondId;
+    }
   }
 
   String _extractFromPath(List<String> segments, String key) {
@@ -71,54 +90,54 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
             const SizedBox(height: 10),
             TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-              hintText: "Search by date",
-              hintStyle: const TextStyle(fontSize: 14),
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.blue),),
+              controller: _searchController,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                hintText: "Search by date",
+                hintStyle: const TextStyle(fontSize: 14),
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: const BorderSide(color: Colors.blue),
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.trim().toLowerCase();
+                });
+              },
             ),
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value.trim().toLowerCase();
-              });
-            },
-          ),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collectionGroup('sensor_logs').snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                stream: FirebaseFirestore.instance.collectionGroup('sensor_logs').snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                    if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}'));
-                    }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
 
-                    var docs = snapshot.data!.docs;
+                  var docs = snapshot.data!.docs;
 
-                    // Sort the documents by timestamp in descending order (client-side)
-                    docs.sort((a, b) {
-                      var aTimestamp = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-                      var bTimestamp = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-                      return bTimestamp?.compareTo(aTimestamp ?? Timestamp.fromDate(DateTime(0))) ?? 0;
-                    });
+                  docs.sort((a, b) {
+                    var aTimestamp = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                    var bTimestamp = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                    return bTimestamp?.compareTo(aTimestamp ?? Timestamp.fromDate(DateTime(0))) ?? 0;
+                  });
 
-                    // Filter based on search query
-                    if (_searchQuery.isNotEmpty) {
-                      docs = docs.where((doc) {
-                        var data = doc.data() as Map<String, dynamic>;
-                        var ts = data['timestamp'] as Timestamp?;
-                        if (ts != null) {
-                          String dateStr = DateFormat("MMMM d, yyyy").format(ts.toDate()).toLowerCase();
-                          return dateStr.contains(_searchQuery);
-                        }
-                        return false;
-                      }).toList();
-                    }
+                  if (_searchQuery.isNotEmpty) {
+                    docs = docs.where((doc) {
+                      var data = doc.data() as Map<String, dynamic>;
+                      var ts = data['timestamp'] as Timestamp?;
+                      if (ts != null) {
+                        String dateStr = DateFormat("MMMM d, yyyy").format(ts.toDate()).toLowerCase();
+                        return dateStr.contains(_searchQuery);
+                      }
+                      return false;
+                    }).toList();
+                  }
 
                   if (docs.isEmpty) {
                     return const Center(child: Text("No readings found"));
@@ -142,7 +161,6 @@ class _HistoryPageState extends State<HistoryPage> {
                       int roundedSalinity = salinity.round();
                       double temperature = (data["temperature"] ?? 0).toDouble();
 
-                      // Extract species and pond ID from document path
                       List<String> pathSegments = doc.reference.path.split('/');
                       String species = _extractFromPath(pathSegments, "species");
                       String pond = _extractFromPath(pathSegments, "ponds");
@@ -206,13 +224,29 @@ class _HistoryPageState extends State<HistoryPage> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    Text(
-                                      "Pond: $pond",
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF5E5E5E),
-                                      ),
+                                    FutureBuilder<String>(
+                                      future: _getPondName(species, pond),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          return const Text(
+                                            "Pond: loading...",
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF5E5E5E),
+                                            ),
+                                          );
+                                        } else {
+                                          return Text(
+                                            "Pond: ${snapshot.data ?? pond}",
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF5E5E5E),
+                                            ),
+                                          );
+                                        }
+                                      },
                                     ),
                                     Text(
                                       "Temperature: ${temperature.toStringAsFixed(1)}°C",
