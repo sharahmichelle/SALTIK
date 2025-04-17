@@ -18,6 +18,12 @@ class StatisticListPage extends StatefulWidget {
   _StatisticListPageState createState() => _StatisticListPageState();
 }
 
+final Map<String, Map<String, double>> speciesSalinityRanges = {
+  "tilapia (nile)": {"low": 5, "high": 20},
+  "shrimp (pacific white)": {"low": 5, "high": 25},
+  "milkfish": {"low": 15, "high": 25},
+};
+
 class _StatisticListPageState extends State<StatisticListPage> {
   TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
@@ -91,6 +97,23 @@ class _StatisticListPageState extends State<StatisticListPage> {
       );
     }
   }
+
+  Color getSalinityColor(double salinity) {
+  final species = widget.speciesName.toLowerCase();
+  final range = speciesSalinityRanges[species];
+
+  if (range != null) {
+    if (salinity >= 28) {
+      return Colors.red; // Low
+    } else if (salinity >= 20) {
+      return Colors.blue; // High
+    } else {
+      return Colors.yellow; // Normal
+    }
+  }
+
+  return Colors.grey; // Default if species not found
+}
 
   @override
   Widget build(BuildContext context) {
@@ -220,9 +243,9 @@ class _StatisticListPageState extends State<StatisticListPage> {
                             child: Container(
                               width: 55,
                               height: 70,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 gradient: RadialGradient(
-                                  colors: [Colors.white, Colors.blue],
+                                  colors: [Colors.white, getSalinityColor(salinity)],
                                   radius: 0.55
                                 ),
                               ),
