@@ -136,11 +136,27 @@ void loop() {
     pumpStatus = "off";
   }
 
-  // Send to Firebase (overwrite latest only)
-  Firebase.setFloat(firebaseData, "/sensor/temperature", floor(temperatureC * 10) / 10);
-  Firebase.setFloat(firebaseData, "/sensor/ec_value", ecValue);
-  Firebase.setFloat(firebaseData, "/sensor/salinity", round(salinity));
-  Firebase.setString(firebaseData, "/sensor/pump_status", pumpStatus);
+  // **Send Data to Firebase**
+  if (Firebase.setFloat(firebaseData, "/sensor/temperature", floor(temperatureC * 10) / 10)) {
+    Serial.println("Temperature updated in Firebase");
+  } else {
+    Serial.println("Failed to update temperature");
+    Serial.println(firebaseData.errorReason());
+  }
 
-  delay(5000);  // Wait before next reading
+  if (Firebase.setFloat(firebaseData, "/sensor/ec_value", ecValue)) {
+    Serial.println("EC updated in Firebase");
+  } else {
+    Serial.println("Failed to update EC");
+    Serial.println(firebaseData.errorReason());
+  }
+
+  if (Firebase.setFloat(firebaseData, "/sensor/salinity", round(salinity))) {
+    Serial.println("Salinity updated in Firebase");
+  } else {
+    Serial.println("Failed to update salinity");
+    Serial.println(firebaseData.errorReason());
+  }
+
+  delay(5000);  // Send data every 5 seconds
 }
