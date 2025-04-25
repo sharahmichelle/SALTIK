@@ -149,8 +149,19 @@ class PondDetailPage extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          Text(
+                          salinity == null
+                              ? "Salinity: Unknown"
+                              : salinity < lowThreshold
+                                  ? "Salinity: Low"
+                                  : salinity > highThreshold
+                                      ? "Salinity: High"
+                                      : "Salinity: Normal",
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
                           Text("Status: ${pond["status"] ?? 'Unknown'}", style: const TextStyle(fontSize: 12)),
-                          Text("Salinity: ${salinity?.toInt() ?? 0} ppt", style: const TextStyle(fontSize: 12)),
+                        //Text("Salinity: ${salinity?.toInt() ?? 0} ppt", style: const TextStyle(fontSize: 12)),
+
                           Text("Life Stage: ${pond["lifestage"] ?? 'Unknown'}", style: const TextStyle(fontSize: 12)),
 
                           const Spacer(), // Removed misplaced Spacer()
