@@ -68,9 +68,14 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:intl/intl.dart';
+import 'package:saltik/screens/home_page.dart';
+import 'package:saltik/screens/reservoir.dart';
 import 'screens/splashscreen.dart';
 import 'authenticate/signin.dart';
 import 'screens/sensor_logger.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 void initializeNotifications() {
   AwesomeNotifications().initialize(
@@ -172,18 +177,32 @@ void main() async {
   // Optionally start the sensor logger on app startup
   //startSensorLoggerOnStartup();
 
-  runApp(MyApp());
+  //runApp(MyApp());
+  final user = FirebaseAuth.instance.currentUser;
+  final prefs = await SharedPreferences.getInstance();
+  final userRole = prefs.getString('userRole');
+
+  runApp(MyApp(
+    isLoggedIn: user != null && userRole != null,
+    userRole: userRole,
+  ));
 }
 
 class MyApp extends StatelessWidget {
+  final bool isLoggedIn;
+  final String? userRole;
+
+  const MyApp({required this.isLoggedIn, required this.userRole});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
         textTheme: GoogleFonts.workSansTextTheme(),
       ),
-      home: SplashScreen(),
+      home: isLoggedIn
+          ? MainScreen(userRole: userRole!)
+          : SplashScreen(),
     );
   }
 }
-
