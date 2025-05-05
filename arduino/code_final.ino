@@ -1,0 +1,214 @@
+#include <Wire.h>
+#include <WiFi.h>
+#include <FirebaseESP32.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <DFRobot_ESP_EC.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// WiFi Credentials
+const char* WIFI_SSID = "gumamela_wifi";        // Wi-Fi SSID
+const char* WIFI_PASSWORD = "ro$3ma2Low";       // Wi-Fi password
+
+// IF THE WIFI DOES NOT HAVE A PASSWORD!
+// const char* WIFI_SSID = "UPVMIAGAO";
+// const char* WIFI_PASSWORD = "";  // Leave it empty for open networks
+
+// Firebase Credentials
+const char* FIREBASE_HOST = "saltik-198-default-rtdb.firebaseio.com";
+const char* FIREBASE_AUTH = "KYlTeJtRRligdZvqT0oSpjllKcDG6yZhWED52lup";
+
+// Firebase objects
+FirebaseData firebaseData;
+FirebaseAuth auth;
+FirebaseConfig config;
+
+// Sensor Pins
+#define ONE_WIRE_BUS 5     // GPIO pin for DS18B20
+#define EC_SENSOR_PIN 35   // GPIO pin for EC sensor
+
+// Motor Pins
+const int Motor1_PWM_L = 18;
+const int Motor1_PWM_R = 19;
+const int Motor1_EN_L = 25;
+const int Motor1_EN_R = 26;
+const int Motor2_PWM_L = 22;
+const int Motor2_PWM_R = 23;
+const int Motor2_EN_L = 27;
+const int Motor2_EN_R = 32;
+
+// Salinity thresholds
+const float SALINITY_MIN = 5.0;
+const float SALINITY_MAX = 10.0;
+
+// Initialize the OLED display
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_ADDR 0x3C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
+
+// Temperature compensation constants
+#define ALPHA 0.022
+#define K 0.8
+
+// Initialize sensors
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+DFRobot_ESP_EC ec;
+
+void setupMotors() {
+  pinMode(Motor1_PWM_L, OUTPUT);
+  pinMode(Motor1_PWM_R, OUTPUT);
+  pinMode(Motor1_EN_L, OUTPUT);
+  pinMode(Motor1_EN_R, OUTPUT);
+
+  pinMode(Motor2_PWM_L, OUTPUT);
+  pinMode(Motor2_PWM_R, OUTPUT);
+  pinMode(Motor2_EN_L, OUTPUT);
+  pinMode(Motor2_EN_R, OUTPUT);
+}
+
+void activatePump(int pumpNumber) {
+  if (pumpNumber == 1) {
+    digitalWrite(Motor1_EN_L, HIGH);
+    digitalWrite(Motor1_EN_R, HIGH);
+    analogWrite(Motor1_PWM_L, 200);
+    analogWrite(Motor1_PWM_R, 0);
+  } 
+  else {
+    digitalWrite(Motor2_EN_L, HIGH);
+    digitalWrite(Motor2_EN_R, HIGH);
+    analogWrite(Motor2_PWM_L, 200);
+    analogWrite(Motor2_PWM_R, 0);
+  }
+}
+
+void deactivatePump(int pumpNumber) {
+  if (pumpNumber == 1) {
+    digitalWrite(Motor1_EN_L, LOW);
+    digitalWrite(Motor1_EN_R, LOW);
+  } 
+  else {
+    digitalWrite(Motor2_EN_L, LOW);
+    digitalWrite(Motor2_EN_R, LOW);
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Connect to Wi-Fi
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to WiFi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi Connected!");
+
+  Wire.begin(21, 33);  // SDA = GPIO21, SCL = GPIO33
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;);
+  }
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println("Temperature and Salinity Sensor");
+  display.display();
+
+  // Firebase config
+  config.host = FIREBASE_HOST;
+  config.signer.tokens.legacy_token = FIREBASE_AUTH;
+  Firebase.begin(&config, &auth);
+  Firebase.reconnectWiFi(true);
+
+  // Sensor and motor init
+  sensors.begin();
+  ec.begin();
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db);
+  setupMotors();
+}
+
+void loop() {
+  sensors.requestTemperatures();
+  float temperatureC = sensors.getTempCByIndex(0);
+  float voltage = analogRead(EC_SENSOR_PIN);
+  float ecValue25 = ec.readEC(voltage, temperatureC);
+  float ecValue = ecValue25 * (1 + ALPHA * (temperatureC - 25));
+  float salinity = ecValue / K;
+
+  // if (temperatureC == -127.0) {
+  // Serial.println("ERROR: Temperature sensor not found or failed to read!");
+  // return;
+  // }
+
+  // Print to Serial Monitor
+  Serial.print("Temperature: ");
+  Serial.print(temperatureC);
+  Serial.println(" °C");
+
+  Serial.print("Salinity: ");
+  Serial.print(salinity, 2);
+  Serial.println(" ppt");
+
+  // === OLED Display Output ===
+  display.clearDisplay();               // Clear the previous content
+  display.setTextSize(1);               // Ensure text size is set
+  display.setTextColor(SSD1306_WHITE);  // Ensure text is visible
+  display.setCursor(0, 0);
+  display.println(F("TEMPERATURE"));
+  display.println(F("Temperature:"));
+  display.print(temperatureC);
+  display.print(F(" C"));
+
+  display.setCursor(0, 32);
+  display.println(F("SALINITY"));
+  display.println(F("Salinity:"));
+  display.print(salinity, 2);
+  display.print(F(" ppt"));
+
+  display.display();                    // Show on screen
+  display.clearDisplay(); // Clear after to avoid ghosting
+
+  // Pump logic
+  String pumpStatus;
+  if (salinity > SALINITY_MAX) {
+    activatePump(1);  // Freshwater
+    deactivatePump(2);
+    pumpStatus = "freshwater";
+    Serial.println(F("Freshwater pump is active (lowering salinity)."));
+  } else if (salinity < SALINITY_MIN) {
+    activatePump(2);  // Saltwater
+    deactivatePump(1);
+    pumpStatus = "saltwater";
+    Serial.println(F("Saltwater pump is active (increasing salinity)."));
+  } else {
+    deactivatePump(1);
+    deactivatePump(2);
+    pumpStatus = "off";
+    Serial.println(F("Salinity is optimal. No pump is active."));
+  }
+
+  // **Send Data to Firebase**
+  if (Firebase.setFloat(firebaseData, "/sensor/temperature", floor(temperatureC * 10) / 10)) {
+    Serial.println("Temperature updated in Firebase");
+  } else {
+    Serial.println("Failed to update temperature");
+    Serial.println(firebaseData.errorReason());
+  }
+
+  if (Firebase.setFloat(firebaseData, "/sensor/salinity", round(salinity))) {
+    Serial.println("Salinity updated in Firebase\n");
+  } else {
+    Serial.println("Failed to update salinity\n");
+    Serial.println(firebaseData.errorReason());
+  }
+
+  delay(5000);  // Send data every 5 seconds
+}
