@@ -5,6 +5,7 @@ import 'package:saltik/screens/home_page.dart';
 import 'signup.dart';
 import 'package:saltik/screens/sensor_logger.dart';
 import 'package:saltik/screens/sensor_logger_startup.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -71,6 +72,10 @@ class _SignInPageState extends State<SignInPage> {
       //   'shrimp (pacific white)',
       //   'tilapia (nile)',
       // ]);
+
+       // ✅ Save userRole locally using SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('userRole', userRole);
 
       Navigator.pushReplacement(
         context,
