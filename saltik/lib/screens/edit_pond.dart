@@ -207,7 +207,7 @@ class _AddEditPondPageState extends State<AddEditPondPage> {
 }
 
   Future<void> savePond() async {
-    if (widget.userRole != "Laborer") {
+    if (widget.userRole != "Researcher") {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("You do not have permission to perform this action.")),
       );

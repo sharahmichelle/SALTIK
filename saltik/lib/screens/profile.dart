@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:saltik/screens/splashscreen.dart';
 import 'edit_profile.dart';
 import 'package:saltik/authenticate/signin.dart';
 
@@ -92,7 +93,7 @@ class _ProfilePageState extends State<ProfilePage> {
         // Navigate to SignInPage after deletion
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => SignInPage()),
+          MaterialPageRoute(builder: (context) => SplashScreen()),
         );
       } catch (e) {
         print("Error deleting account: $e");
@@ -222,7 +223,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 await _auth.signOut();
                                 Navigator.pushReplacement(
                                   context,
-                                  MaterialPageRoute(builder: (context) => SignInPage()),
+                                  MaterialPageRoute(builder: (context) => SplashScreen()),
                                 );
                               }
                             },
