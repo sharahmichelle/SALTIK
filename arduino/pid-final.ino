@@ -30,9 +30,10 @@ FirebaseConfig config;
 #define EC_SENSOR_PIN 35   // GPIO pin for EC sensor
 
 // PID variables
-double salinityInput, pumpOutput, salinitySetpoint = 5.5;
-const double SALINITY_DEADBAND = 0.7;  // ±0.7 ppt tolerance
+double salinityInput, pumpOutput, salinitySetpoint = 5.0;
+const double SALINITY_DEADBAND = 0.5;  // ±0.5 ppt tolerance
 
+// Tune these values (trial and error or Ziegler–Nichols method)
 double Kp = 50, Ki = 0.5, Kd = 1;
 PID myPID(&salinityInput, &pumpOutput, &salinitySetpoint, Kp, Ki, Kd, REVERSE);
 
@@ -191,7 +192,7 @@ void loop() {
   unsigned long now = millis();
   double error = salinity - salinitySetpoint;
 
-  // Check within deadband or if pumps are in cooldown
+  // Check if we're within deadband or if pumps are in cooldown
   if (abs(error) <= SALINITY_DEADBAND) {
     // Turn off pumps if they were running
     if (pumpRunning) {
@@ -205,6 +206,7 @@ void loop() {
     }
   } 
   else {
+    // Only activate pumps if MIN_PUMP_RUNTIME_MS has passed
     if (!pumpRunning || (now - lastPumpChangeTime >= MIN_PUMP_RUNTIME_MS)) {
       if (pumpOutput > 0) {
         analogWrite(Motor1_PWM_L, pumpOutput);  // Freshwater pump
