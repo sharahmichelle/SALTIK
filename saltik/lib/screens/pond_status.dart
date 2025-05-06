@@ -172,9 +172,9 @@ class PondDetailPage extends StatelessWidget {
                               IconButton(
                                 icon: const Icon(Icons.edit, color: Colors.blue),
                                 onPressed: () {
-                                if (userRole != "Laborer") {
+                                if (userRole != "Researcher" && userRole != "Laborer") {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Only laborers are allowed to edit a pond.")),
+                                    const SnackBar(content: Text("Only researchers and laborers are allowed to edit a pond.")),
                                   );
                                   return;
                                 }
@@ -196,9 +196,9 @@ class PondDetailPage extends StatelessWidget {
                               IconButton(
                                 icon: const Icon(Icons.delete, color: Colors.red),
                                 onPressed: () {
-                                if (userRole != "Laborer") {
+                                if (userRole != "Researcher") {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Only laborers are allowed to delete a pond.")),
+                                    const SnackBar(content: Text("Only researchers are allowed to delete a pond.")),
                                   );
                                   return;
                                 }
@@ -222,9 +222,9 @@ class PondDetailPage extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: ElevatedButton(
                 onPressed: () {
-                if (userRole != "Laborer") {
+                if (userRole != "Researcher" && userRole != "Laborer") {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Only laborers are allowed to add a pond.")),
+                    const SnackBar(content: Text("Only researchers and laborer are allowed to add a pond.")),
                   );
                   return;
                 }
