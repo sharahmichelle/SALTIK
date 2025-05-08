@@ -33,10 +33,11 @@ FirebaseConfig config;
 double salinityInput, pumpOutput, salinitySetpoint = 5.0;
 const double SALINITY_DEADBAND = 0.5;  // ±0.5 ppt tolerance
 
-// Tune these values (trial and error or Ziegler–Nichols method)
+// PID tuning constants
 double Kp = 50, Ki = 0.5, Kd = 1;
 PID myPID(&salinityInput, &pumpOutput, &salinitySetpoint, Kp, Ki, Kd, REVERSE);
 
+// Pump timing logic
 const unsigned long MIN_PUMP_RUNTIME_MS = 5000;  // 5 seconds minimum pump runtime
 const unsigned long PUMP_COOLDOWN_MS = 2000;      // 2 seconds cooldown after pump stops
 unsigned long lastPumpChangeTime = 0;
@@ -192,9 +193,9 @@ void loop() {
   unsigned long now = millis();
   double error = salinity - salinitySetpoint;
 
-  // Check if we're within deadband or if pumps are in cooldown
+  // Check if within deadband or if pumps are in cooldown
   if (abs(error) <= SALINITY_DEADBAND) {
-    // Turn off pumps if they were running
+    // Turn off pumps if running
     if (pumpRunning) {
       deactivatePump(1);
       deactivatePump(2);
