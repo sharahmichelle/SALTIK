@@ -152,9 +152,14 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     Timestamp timestamp = data['timestamp'] as Timestamp;
 
                     // Convert UTC timestamp to local time (in this case, Philippine Time)
-                    DateTime utcDateTime = timestamp.toDate();
-                    DateTime localDateTime = utcDateTime.add(Duration(hours: 8));
-                    // Now format the local time to display correctly
+                    // DateTime utcDateTime = timestamp.toDate();
+                    // DateTime localDateTime = utcDateTime.add(Duration(hours: 8));
+                    // // Now format the local time to display correctly
+                    // String datePart = DateFormat('MM/dd/yy').format(localDateTime);
+                    // String timePart = DateFormat('hh:mm a').format(localDateTime);
+                    // String dateLabel = '$datePart\n$timePart';
+
+                    DateTime localDateTime = timestamp.toDate().toLocal();
                     String datePart = DateFormat('MM/dd/yy').format(localDateTime);
                     String timePart = DateFormat('hh:mm a').format(localDateTime);
                     String dateLabel = '$datePart\n$timePart';
@@ -223,7 +228,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                                 ),
                                               ),
                                             TextSpan(
-                                              text: time,
+                                              text: "$time",
                                               style: GoogleFonts.workSans(
                                                 fontSize: 10,
                                                 color: Colors.black, 
