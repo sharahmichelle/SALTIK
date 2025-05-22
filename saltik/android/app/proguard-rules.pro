@@ -1,0 +1,2 @@
+-keep class me.carda.awesome_notifications.** { *; }
+-keep class com.google.firebase.** { *; }
