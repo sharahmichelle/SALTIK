@@ -1,0 +1,285 @@
+#include <Wire.h>
+#include <WiFi.h>
+#include <FirebaseESP32.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <DFRobot_ESP_EC.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <PID_v1.h>
+
+// WiFi Credentials
+// const char* WIFI_SSID = "gumamela_wifi";        // Wi-Fi SSID
+// const char* WIFI_PASSWORD = "ro$3ma2Low";       // Wi-Fi password
+
+// IF THE WIFI DOES NOT HAVE A PASSWORD!
+const char* WIFI_SSID = "UPVMIAGAO";
+const char* WIFI_PASSWORD = "";  // Leave it empty for open networks
+
+// Firebase Credentials
+const char* FIREBASE_HOST = "saltik-198-default-rtdb.firebaseio.com";
+const char* FIREBASE_AUTH = "KYlTeJtRRligdZvqT0oSpjllKcDG6yZhWED52lup";
+
+// Firebase objects
+FirebaseData firebaseData;
+FirebaseAuth auth;
+FirebaseConfig config;
+
+// Sensor Pins
+#define ONE_WIRE_BUS 5     // GPIO pin for DS18B20
+#define EC_SENSOR_PIN 35   // GPIO pin for EC sensor
+
+// PID variables
+double salinityInput, pumpOutput, salinitySetpoint = 5.0;
+const double SALINITY_DEADBAND = 0.5;  // ±0.5 ppt tolerance
+
+// PID tuning constants
+double Kp = 50, Ki = 0.5, Kd = 1;
+PID myPID(&salinityInput, &pumpOutput, &salinitySetpoint, Kp, Ki, Kd, REVERSE);
+
+// Pump timing logic
+const unsigned long MIN_PUMP_RUNTIME_MS = 5000;  // 5 seconds minimum pump runtime
+const unsigned long PUMP_COOLDOWN_MS = 2000;      // 2 seconds cooldown after pump stops
+unsigned long lastPumpChangeTime = 0;
+bool pumpRunning = false;
+
+// Motor Pins
+const int Motor1_PWM_L = 18;
+const int Motor1_PWM_R = 19;
+const int Motor1_EN_L = 25;
+const int Motor1_EN_R = 26;
+const int Motor2_PWM_L = 22;
+const int Motor2_PWM_R = 23;
+const int Motor2_EN_L = 27;
+const int Motor2_EN_R = 32;
+
+// Initialize the OLED display
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_ADDR 0x3C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
+
+// Temperature compensation constants
+#define ALPHA 0.022
+#define K 0.8
+
+// Initialize sensors
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+DFRobot_ESP_EC ec;
+
+void setupMotors() {
+  pinMode(Motor1_PWM_L, OUTPUT);
+  pinMode(Motor1_PWM_R, OUTPUT);
+  pinMode(Motor1_EN_L, OUTPUT);
+  pinMode(Motor1_EN_R, OUTPUT);
+
+  pinMode(Motor2_PWM_L, OUTPUT);
+  pinMode(Motor2_PWM_R, OUTPUT);
+  pinMode(Motor2_EN_L, OUTPUT);
+  pinMode(Motor2_EN_R, OUTPUT);
+}
+
+void activatePump(int pumpNumber) {
+  if (pumpNumber == 1) {
+    digitalWrite(Motor1_EN_L, HIGH);
+    digitalWrite(Motor1_EN_R, HIGH);
+    analogWrite(Motor1_PWM_L, 200);
+    analogWrite(Motor1_PWM_R, 0);
+  } 
+  else {
+    digitalWrite(Motor2_EN_L, HIGH);
+    digitalWrite(Motor2_EN_R, HIGH);
+    analogWrite(Motor2_PWM_L, 200);
+    analogWrite(Motor2_PWM_R, 0);
+  }
+}
+
+void deactivatePump(int pumpNumber) {
+  if (pumpNumber == 1) {
+    digitalWrite(Motor1_EN_L, LOW);
+    digitalWrite(Motor1_EN_R, LOW);
+  } 
+  else {
+    digitalWrite(Motor2_EN_L, LOW);
+    digitalWrite(Motor2_EN_R, LOW);
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Connect to Wi-Fi
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to WiFi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi Connected!");
+
+  Wire.begin(21, 33);  // SDA = GPIO21, SCL = GPIO33
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;);
+  }
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println("Temperature and Salinity Sensor");
+  display.display();
+
+  // Firebase config
+  config.host = FIREBASE_HOST;
+  config.signer.tokens.legacy_token = FIREBASE_AUTH;
+  Firebase.begin(&config, &auth);
+  Firebase.reconnectWiFi(true);
+
+  myPID.SetMode(AUTOMATIC);
+  myPID.SetOutputLimits(-255, 255);  // Negative = saltwater, Positive = freshwater
+
+  // Sensor and motor init
+  sensors.begin();
+  ec.begin();
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db);
+  setupMotors();
+}
+
+// Assuming 3.3V logic level for ESP32 PWM output
+const float PWM_MAX_VOLTAGE = 3.3;
+const int PWM_MAX_VALUE = 255;  // PWM max value (8-bit)
+
+void loop() {
+  sensors.requestTemperatures();
+  float temperatureC = sensors.getTempCByIndex(0);
+  float voltage = analogRead(EC_SENSOR_PIN);
+  float ecValue25 = ec.readEC(voltage, temperatureC);
+  float ecValue = ecValue25 * (1 + ALPHA * (temperatureC - 25));
+  float salinity = ecValue / K;
+
+  // Print to Serial Monitor
+  Serial.print("Temperature: ");
+  Serial.print(temperatureC);
+  Serial.println(" °C");
+
+  Serial.print("Salinity: ");
+  Serial.print(salinity, 2);
+  Serial.println(" ppt");
+
+  // === OLED Display Output ===
+  display.clearDisplay();               // Clear the previous content
+  display.setTextSize(1);               // Ensure text size is set
+  display.setTextColor(SSD1306_WHITE);  // Ensure text is visible
+  display.setCursor(0, 0);
+  display.println(F("TEMPERATURE"));
+  display.println(F("Temperature:"));
+  display.print(temperatureC);
+  display.print(F(" C"));
+
+  display.setCursor(0, 32);
+  display.println(F("SALINITY"));
+  display.println(F("Salinity:"));
+  display.print(salinity, 2);
+  display.print(F(" ppt"));
+
+  display.display();                    // Show on screen
+  display.clearDisplay(); // Clear after to avoid ghosting
+
+  Serial.print("PWM Output (pumpOutput): ");
+  Serial.println(pumpOutput);
+
+  // Calculate PWM voltages for freshwater and saltwater pumps
+  float freshwaterPWMValue = 0.0;
+  float saltwaterPWMValue = 0.0;
+  float freshwaterVoltage = 0.0;
+  float saltwaterVoltage = 0.0;
+
+  if (pumpOutput > 0) {
+    freshwaterPWMValue = pumpOutput;
+    freshwaterVoltage = PWM_MAX_VOLTAGE * (freshwaterPWMValue / PWM_MAX_VALUE);
+  } else if (pumpOutput < 0) {
+    saltwaterPWMValue = abs(pumpOutput);
+    saltwaterVoltage = PWM_MAX_VOLTAGE * (saltwaterPWMValue / PWM_MAX_VALUE);
+  }
+
+  Serial.print("Freshwater Pump PWM Value: ");
+  Serial.print(freshwaterPWMValue);
+  Serial.print(" | Voltage: ");
+  Serial.print(freshwaterVoltage, 2);
+  Serial.println(" V");
+
+  Serial.print("Saltwater Pump PWM Value: ");
+  Serial.print(saltwaterPWMValue);
+  Serial.print(" | Voltage: ");
+  Serial.print(saltwaterVoltage, 2);
+  Serial.println(" V");
+
+
+  // Pump logic
+  String pumpStatus;
+  salinityInput = salinity;
+  myPID.Compute();
+
+  unsigned long now = millis();
+  double error = salinity - salinitySetpoint;
+
+  // Check if within deadband or if pumps are in cooldown
+  if (abs(error) <= SALINITY_DEADBAND) {
+    // Turn off pumps if running
+    if (pumpRunning) {
+      deactivatePump(1);
+      deactivatePump(2);
+      pumpRunning = false;
+      lastPumpChangeTime = now;
+      pumpStatus = "off";
+      Serial.println(F("Salinity in range. Pumps OFF."));
+      delay(PUMP_COOLDOWN_MS);  // Cooldown before rechecking
+    }
+  } 
+  else {
+    // Only activate pumps if MIN_PUMP_RUNTIME_MS has passed
+    if (!pumpRunning || (now - lastPumpChangeTime >= MIN_PUMP_RUNTIME_MS)) {
+      if (pumpOutput > 0) {
+        analogWrite(Motor1_PWM_L, pumpOutput);  // Freshwater pump
+        analogWrite(Motor1_PWM_R, 0);
+        digitalWrite(Motor1_EN_L, HIGH);
+        digitalWrite(Motor1_EN_R, HIGH);
+        deactivatePump(2);
+        pumpStatus = "freshwater";
+        Serial.println(F("Freshwater pump ON (lowering salinity)."));
+      } 
+      else if (pumpOutput < 0) {
+        analogWrite(Motor2_PWM_L, abs(pumpOutput));  // Saltwater pump
+        analogWrite(Motor2_PWM_R, 0);
+        digitalWrite(Motor2_EN_L, HIGH);
+        digitalWrite(Motor2_EN_R, HIGH);
+        deactivatePump(1);
+        pumpStatus = "saltwater";
+        Serial.println(F("Saltwater pump ON (increasing salinity)."));
+      }
+      pumpRunning = true;
+      lastPumpChangeTime = now;
+    }
+  }
+
+  // **Send Data to Firebase**
+  if (Firebase.setFloat(firebaseData, "/sensor/temperature", floor(temperatureC * 10) / 10)) {
+    Serial.println("Temperature updated in Firebase");
+  } else {
+    Serial.println("Failed to update temperature");
+    Serial.println(firebaseData.errorReason());
+  }
+
+  if (Firebase.setFloat(firebaseData, "/sensor/salinity", round(salinity))) {
+    Serial.println("Salinity updated in Firebase\n");
+  } else {
+    Serial.println("Failed to update salinity\n");
+    Serial.println(firebaseData.errorReason());
+  }
+
+  delay(5000);  // Send data every 5 seconds
+}
